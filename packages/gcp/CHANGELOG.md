@@ -1,5 +1,16 @@
 # @cloud-carbon-footprint/gcp
 
+## 0.10.0
+
+### Minor Changes
+
+- 28cb7073: Updates emissions factors for cloud provider regions
+
+### Patch Changes
+
+- Updated dependencies [28cb7073]
+  - @cloud-carbon-footprint/common@1.7.0
+
 ## 0.9.1
 
 ### Patch Changes
