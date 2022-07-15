@@ -12,7 +12,7 @@ const useStyles = makeStyles(({ spacing }) => ({
   row: {
     cursor: 'pointer',
     '&:hover': {
-      border: 'solid 2px #3F51B5',
+      border: 'solid 2px #EC6559',
       borderRadius: '7px',
     },
   },

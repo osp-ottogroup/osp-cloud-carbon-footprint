@@ -115,7 +115,7 @@ const getConfig = (): CCFConfig => ({
     ATHENA_DB_TABLE: getEnvVar('AWS_ATHENA_DB_TABLE') || '',
     ATHENA_QUERY_RESULT_LOCATION:
       getEnvVar('AWS_ATHENA_QUERY_RESULT_LOCATION') || '',
-    ATHENA_REGION: getEnvVar('AWS_ATHENA_REGION'),
+    ATHENA_REGION: getEnvVar('AWS_ATHENA_REGION') || '',
     accounts: JSON.parse(getAWSAccounts()) || [],
     authentication: {
       mode: getEnvVar('AWS_AUTH_MODE') || 'default',
@@ -179,7 +179,14 @@ const getConfig = (): CCFConfig => ({
   GCP: {
     projects: JSON.parse(getGCPProjects()) || [],
     NAME: 'GCP',
-    CURRENT_REGIONS: ['us-east1', 'us-central1', 'us-west1'],
+    CURRENT_REGIONS: [
+      'us-east1',
+      'us-central1',
+      'us-west1',
+      'europe-west1',
+      'europe-west2',
+      'europe-west3',
+    ],
     CURRENT_SERVICES: [
       {
         key: 'computeEngine',
