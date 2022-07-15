@@ -9,9 +9,11 @@ const useStyles = makeStyles((theme: Theme) =>
     appBar: {
       zIndex: theme.zIndex.drawer + 1,
       flexGrow: 1,
+      color: '#465156',
+      backgroundColor: '#F7F8F8',
     },
     logo: {
-      height: 32,
+      height: 60,
     },
     navContainer: {
       justifyContent: 'space-between',
@@ -21,6 +23,8 @@ const useStyles = makeStyles((theme: Theme) =>
       gap: 15,
       color: 'inherit',
       textDecoration: 'inherit',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     navLink: {
       fontSize: theme.typography.fontSize,
