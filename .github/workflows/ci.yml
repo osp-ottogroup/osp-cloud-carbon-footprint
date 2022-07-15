@@ -236,7 +236,7 @@ jobs:
     container:
       image: node:18-alpine3.15
     environment:
-      name: staging
+      name: production
     env:
       AWS_PROXY_ACCOUNT_ID: ${{ secrets.AWS_PROXY_ACCOUNT_ID }}
       AWS_PROXY_ROLE_NAME: ${{ secrets.AWS_PROXY_ROLE_NAME }}
@@ -249,6 +249,7 @@ jobs:
       AWS_ATHENA_QUERY_RESULT_LOCATION: ${{ secrets.AWS_ATHENA_QUERY_RESULT_LOCATION }}
       AWS_BILLING_ACCOUNT_ID: ${{ secrets.AWS_BILLING_ACCOUNT_ID }}
       AWS_BILLING_ACCOUNT_NAME: ${{ secrets.AWS_BILLING_ACCOUNT_NAME }}
+      AWS_USE_BILLING_DATA: ${{ secrets.AWS_USE_BILLING_DATA }}
       GCP_PROJECTS: ${{ secrets.GCP_PROJECTS }}
       GCP_BIG_QUERY_TABLE: ${{ secrets.GCP_BIG_QUERY_TABLE }}
       GCP_BILLING_PROJECT_ID: ${{ secrets.GCP_BILLING_PROJECT_ID }}
@@ -267,6 +268,8 @@ jobs:
       GROUP_QUERY_RESULTS_BY: ${{ secrets.GROUP_QUERY_RESULTS_BY }}
       GCS_CACHE_BUCKET_NAME: ${{ secrets.GCS_CACHE_BUCKET_NAME }}
       CACHE_MODE: ${{ secrets.CACHE_MODE }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_CREDENTIALS: ${{ secrets.MONGODB_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -278,6 +281,7 @@ jobs:
         env:
           GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          MONGODB_CERTIFICATE: ${{ secrets.MONGODB_CERTIFICATE }}
         run: |
           apk update && apk add --no-cache  python3 py-crcmod bash libc6-compat curl git
           export PATH=$PATH:/root/google-cloud-sdk/bin
@@ -285,6 +289,7 @@ jobs:
 
           cp packages/api/create_server_env_file.sh dist-workspace/packages/api
           cp packages/api/app-staging.yaml dist-workspace/packages/api
+          echo $MONGODB_CERTIFICATE | awk -v RS='-+(BEGIN|END) (PRIVATE KEY|CERTIFICATE)-+' '{gsub(/ +/, "\n"); ORS=RT} 1' > dist-workspace/packages/api/mongo-credentials.pem
 
           cp packages/client/app-staging.yaml dist-workspace/packages/client
 
@@ -298,13 +303,7 @@ jobs:
           cd dist-workspace/packages/api
           # Generate yarn.lock file
           yarn install
-          echo "yarn installation finished..."
-          echo "DEBUG: cat ./create_server_env_file.sh"
-          cat ./create_server_env_file.sh
-          echo "DEBUG: cat ./create_server_env_file.sh finished..."
-          echo "start ./create_server_env_file.sh ..."          
           ./create_server_env_file.sh
-          echo "./create_server_env_file.sh finished..."
           cd ../../..
 
           # Store service account
@@ -348,7 +347,7 @@ jobs:
       GCP_VCPUS_PER_CLOUD_COMPOSER_ENVIRONMENT: ${{ secrets.GCP_VCPUS_PER_CLOUD_COMPOSER_ENVIRONMENT }}
       GCP_USE_BILLING_DATA: ${{ secrets.GCP_USE_BILLING_DATA }}
       GOOGLE_APPLICATION_CREDENTIALS_CONTENT: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}      
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
       AZURE_AUTH_MODE: ${{ secrets.AZURE_AUTH_MODE }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
