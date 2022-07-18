@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'Job to run.'
+        description: 'Deploy prod?'
         required: true
-        default: 'deploy-production'
+        default: 'false'
   push:
     branches: [trunk]
     paths-ignore:
@@ -305,7 +305,7 @@ jobs:
           ./deploy-staging.sh
           cd ..
   deploy-production:
-    if: github.ref == 'refs/heads/trunk'
+    if: github.ref == 'refs/heads/trunk' && github.event.inputs.job == 'true'
     needs: build
     runs-on: ubuntu-latest
     container:
@@ -406,6 +406,7 @@ jobs:
       AWS_BILLING_ACCOUNT_ID: ${{ secrets.AWS_BILLING_ACCOUNT_ID }}
       AWS_BILLING_ACCOUNT_NAME: ${{ secrets.AWS_BILLING_ACCOUNT_NAME }}
       GCP_PROJECTS: ${{ secrets.GCP_PROJECTS }}
+      GCP_USE_BILLING_DATA: ${{ secrets.GCP_USE_BILLING_DATA }}
       GCP_BIG_QUERY_TABLE: ${{ secrets.GCP_BIG_QUERY_TABLE }}
       GCP_BILLING_PROJECT_ID: ${{ secrets.GCP_BILLING_PROJECT_ID }}
       GCP_BILLING_PROJECT_NAME: ${{ secrets.GCP_BILLING_PROJECT_NAME }}
@@ -416,6 +417,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_USE_BILLING_DATA: ${{ secrets.AZURE_USE_BILLING_DATA }}
       GROUP_QUERY_RESULTS_BY: ${{ secrets.GROUP_QUERY_RESULTS_BY }}
       GCS_CACHE_BUCKET_NAME: ${{ secrets.GCS_CACHE_BUCKET_NAME }}
       CACHE_MODE: ${{ secrets.CACHE_MODE }}
