@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'Job to run.'
+        description: 'Deploy prod?'
         required: true
-        default: 'deploy-production'
+        default: 'false'
   push:
     branches: [trunk]
     paths-ignore:
@@ -303,7 +303,8 @@ jobs:
           ./deploy-staging.sh
           cd ..
   deploy-production:
-    if: github.ref == 'refs/heads/trunk'
+    if: github.ref == 'refs/heads/trunk' && github.event.inputs.job == 'true'
+    needs: build
     runs-on: ubuntu-latest
     container:
       image: node:14.18-alpine3.14

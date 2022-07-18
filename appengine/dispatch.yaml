@@ -1,10 +1,10 @@
 dispatch:
-#  - url: "staging.cloud-carbon-footprint.ey.r.appspot.com/api/*"
-#    service: api-staging
-#
-#  - url: "staging.cloud-carbon-footprint.ey.r.appspot.com/*"
-#    service: default-staging
-#
+  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/api/*"
+    service: api-staging
+
+  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/*"
+    service: default-staging
+
   - url: "ogcs-btqm-osphub.ey.r.appspot.com/api/*"
     service: api
 
