@@ -3,7 +3,7 @@ dispatch:
     service: api-staging
 
   - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/*"
-    service: default-staging
+    service: client-staging
 
   - url: "ogcs-btqm-osphub.ey.r.appspot.com/api/*"
     service: api
