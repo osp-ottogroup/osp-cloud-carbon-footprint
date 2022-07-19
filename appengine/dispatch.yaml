@@ -1,9 +1,9 @@
 dispatch:
-  - url: "staging-ccf.ey.r.appspot.com/api/*"
+  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/api/*"
     service: api-staging
 
-  - url: "staging-ccf.ey.r.appspot.com/*"
-    service: default-staging
+  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/*"
+    service: staging
 
   - url: "ogcs-btqm-osphub.ey.r.appspot.com/api/*"
     service: api

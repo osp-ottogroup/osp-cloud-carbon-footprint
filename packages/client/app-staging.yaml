@@ -1,4 +1,4 @@
-service: default-staging
+service: staging
 
 runtime: nodejs12
 instance_class: F1
