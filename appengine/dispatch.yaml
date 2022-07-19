@@ -1,9 +1,9 @@
 dispatch:
-  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/api/*"
-    service: api-staging
+  - url: "integ.ogcs-btqm-osphub.ey.r.appspot.com/api/*"
+    service: api-integ
 
-  - url: "staging.ogcs-btqm-osphub.ey.r.appspot.com/*"
-    service: staging
+  - url: "integ.ogcs-btqm-osphub.ey.r.appspot.com/*"
+    service: integ
 
   - url: "ogcs-btqm-osphub.ey.r.appspot.com/api/*"
     service: api

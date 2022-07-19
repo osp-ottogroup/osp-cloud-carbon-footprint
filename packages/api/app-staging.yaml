@@ -1,4 +1,4 @@
-service: api-staging
+service: api-integ
 
 runtime: nodejs16
 instance_class: B4_1G
