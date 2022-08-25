@@ -6,6 +6,10 @@ on:
         description: 'Deploy prod?'
         required: true
         default: 'false'
+      force_deploy_staging:
+        description: 'Force deploy staging?'
+        required: false
+        default: ''
   push:
     branches: [trunk]
     paths-ignore:
@@ -224,7 +228,7 @@ jobs:
 #            cloudcarbonfootprint/api:${{ steps.create_tag.outputs.tag_name }}
 #            cloudcarbonfootprint/api:latest
   deploy-staging:
-    if: github.ref == 'refs/heads/trunk'
+    if: github.ref == 'refs/heads/trunk' || github.event.inputs.force_deploy_staging == 'true'
     needs: build
     runs-on: ubuntu-latest
     container:
