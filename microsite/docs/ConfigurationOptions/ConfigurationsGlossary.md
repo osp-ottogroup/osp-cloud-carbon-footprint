@@ -169,3 +169,5 @@ sidebar_position: 4
 | REACT_APP_DISABLE_CACHE          | true                    | boolean | Set to true to disable caching. Defaults to false.                                                                                                  |
 | REACT_APP_DISABLE_FORECAST_VALIDATION | true               | boolean | Set to true to disable recommendations forecast validation. Defaults to false. (For accurate forecasts, it is recommended to keep this enabled)     |
 | REACT_APP_PAGE_LIMIT             | 50000                   | number  | The pagination limit for fetched estimates per request. Defaults to 50000. (MongoDB Only, recommended to not exceed 50000)                          |
+| REACT_APP_DISABLE_CACHE          | true          | boolean | General cache config - Optionally disable and ignore the cache and request fresh estimates each time (true/false)                                   |
+| REACT_APP_PAGE_LIMIT             | 3000          | number  | When using MongoDB as cache, large results will be paginated and split into multiple requests. Use this to set a limit for results per page/request. |
