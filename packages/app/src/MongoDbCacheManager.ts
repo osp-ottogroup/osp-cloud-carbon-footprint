@@ -41,6 +41,7 @@ export default class MongoDbCacheManager extends CacheManager {
       moment.utc(request.startDate).startOf(unitOfTime) as unknown as Date,
     )
     const endDate = new Date(request.endDate)
+
     return new Promise(function (resolve, reject) {
       db.listCollections({ name: collectionName }).next(
         async (err: Error, collectionInfo: any) => {
@@ -56,6 +57,9 @@ export default class MongoDbCacheManager extends CacheManager {
                 .aggregate(
                   [
                     {
+                      $match: { timestamp: { $gte: startDate, $lte: endDate } },
+                    },
+                    {
                       $group: {
                         _id: '$timestamp',
                         timestamp: { $first: '$timestamp' },
@@ -70,9 +74,6 @@ export default class MongoDbCacheManager extends CacheManager {
                         'serviceEstimates.timestamp',
                         'serviceEstimates.groupBy',
                       ],
-                    },
-                    {
-                      $match: { timestamp: { $gte: startDate, $lte: endDate } },
                     },
                   ],
                   { allowDiskUse: true },

@@ -161,30 +161,23 @@ describe('MongoDbCacheManager', () => {
       startDate: testDate,
       endDate: new Date('2022-01-02'),
       ignoreCache: false,
+      groupBy: 'day',
     }
 
     beforeEach(() => {
       mockClient = {
-        db: jest.fn().mockImplementation(() => {
-          return {
-            listCollections: jest.fn().mockImplementation(() => {
-              return {
-                next: jest.fn().mockImplementation((callback) => {
-                  callback(undefined, { name: 'test-collection' })
-                }),
-              }
+        db: jest.fn().mockImplementation(() => ({
+          listCollections: jest.fn().mockImplementation(() => ({
+            next: jest.fn().mockImplementation((callback) => {
+              callback(undefined, { name: 'test-collection' })
             }),
-            collection: jest.fn().mockImplementation(() => {
-              return {
-                aggregate: jest.fn().mockImplementation(() => {
-                  return {
-                    toArray: jest.fn().mockResolvedValue(mockEstimates),
-                  }
-                }),
-              }
-            }),
-          }
-        }),
+          })),
+          collection: jest.fn().mockImplementation(() => ({
+            aggregate: jest.fn().mockImplementation(() => ({
+              toArray: jest.fn().mockResolvedValue(mockEstimates),
+            })),
+          })),
+        })),
         close: jest.fn(),
         connect: jest.fn(),
       }

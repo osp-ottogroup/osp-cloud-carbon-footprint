@@ -131,7 +131,7 @@ export default class BillingExportTable {
     inputData.map((inputDataRow: LookupTableInput) => {
       const usageRow = {
         serviceName: inputDataRow.serviceName,
-        usageAmount: 1,
+        usageAmount: 3600,
         usageType: inputDataRow.usageType,
         usageUnit: inputDataRow.usageUnit,
         cost: 1,
@@ -141,6 +141,16 @@ export default class BillingExportTable {
       }
 
       const billingExportRow = new BillingExportRow(usageRow)
+
+      // if there is a machineType. override vCpuHours value,
+      // since it is set using usageAmount, which is always 1 for lookup table generation
+      if (billingExportRow.machineType) {
+        const { instancevCpu } = this.getDataFromMachineType(
+          billingExportRow.machineType,
+        )
+        billingExportRow.vCpuHours = instancevCpu * billingExportRow.vCpuHours
+      }
+
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         billingExportRow,
         unknownRows,
@@ -286,8 +296,7 @@ export default class BillingExportTable {
         usageRow.usageType,
       )
     } else {
-      computeProcessors = this.getComputeProcessorsFromUsageType(
-        usageRow.usageType,
+      computeProcessors = this.getComputeProcessorsFromMachineType(
         usageRow.machineType,
       )
     }
@@ -317,16 +326,13 @@ export default class BillingExportTable {
     return computeFootprint
   }
 
-  private getComputeProcessorsFromUsageType(
-    usageType: string,
-    machineType: string,
-  ): string[] {
+  private getComputeProcessorsFromMachineType(machineType: string): string[] {
     const sharedCoreMatch =
       machineType &&
       Object.values(SHARED_CORE_PROCESSORS).find((core) =>
         machineType.includes(core),
       )
-    const includesPrefix = usageType.substring(0, 2).toLowerCase()
+    const includesPrefix = machineType?.substring(0, 2).toLowerCase()
     const processor = sharedCoreMatch ? sharedCoreMatch : includesPrefix
 
     return (
@@ -613,11 +619,11 @@ export default class BillingExportTable {
                   WHERE
                     cost_type != 'rounding_error'
                     AND usage.unit IN ('byte-seconds', 'seconds', 'bytes', 'requests')
-                    AND usage_start_time BETWEEN TIMESTAMP('${moment
-                      .utc(start)
-                      .format('YYYY-MM-DD')}') AND TIMESTAMP('${moment
-      .utc(end)
-      .format('YYYY-MM-DD')}')
+                    AND usage_start_time BETWEEN TIMESTAMP('${moment(
+                      start,
+                    ).format('YYYY-MM-DD')}') AND TIMESTAMP('${moment(
+      end,
+    ).format('YYYY-MM-DD')}')
                   GROUP BY
                     timestamp,
                     accountId,

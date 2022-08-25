@@ -122,7 +122,7 @@ fileignoreconfig:
 - filename: packages/api/estimates.cache.test.json
   checksum: 47701f39ac93d11ebf30ebc3eb7499971094144b82bbd558aebdaa551d8228f3
 - filename: packages/api/mock-estimates.json
-  checksum: f5b0f548d7065f63c5772628903492479fabc1ba3e4cc27246bd6dbe799770e9
+  checksum: 8e9863c48edd5fb60fd4cb2085f466884b231105bdeb16619fdb72ad63598253
 - filename: packages/api/package.json
   checksum: 3fd7ec81bfa309f1d01ae0eadb695a418850e671d148715ae4259e14706491f5
 - filename: packages/app/src/Cache.ts
@@ -164,7 +164,7 @@ fileignoreconfig:
 - filename: packages/azure/src/__tests__/ConsumptionManagement.test.ts
   checksum: 68f9a8c23d08e892511e99356f39c010b8e8959fd012aaa51e999cd51e51181b
 - filename: packages/azure/src/lib/ConsumptionManagement.ts
-  checksum: 669a3212a3eed03bb4a42b7aa2f5b546a2eaa92c16bfe05dfbe0dcc64321a3c0
+  checksum: 42fc6ed4df06fb61f5077f3192d8b8aa8162016621da79f369247fac612afbd6
 - filename: packages/cli/.env.template
   checksum: 28266ade37e49623d9b0d5270a1e1658c652453f6316ea6bc62dc740bf9ccc7c
 - filename: packages/cli/src/CreateLookupTable/createAzureInput.ts
@@ -180,7 +180,7 @@ fileignoreconfig:
 - filename: packages/cli/src/__tests__/CreateLookupTable/__snapshots__/createLookupTable.test.ts.snap
   checksum: cc7e5bbdeca11f8a76a5bd067de7cbb63c87e77aac940064bac414b5e0db3702
 - filename: packages/client/.env.template
-  checksum: a2da05dc909b7d35c485fd9e555f35990a0b28ce16c4f7e4cddf7c07a5665fb1
+  checksum: 1c4486bc5eeefefaa52481541884e38a9cb984fc6f90c56ffc1e7ad57ddd2c05
 - filename: packages/client/create_client_env_file.sh
   checksum: 2ebf0978d768edd6423a9f5f3b0f3fcdbe2c484d69152c6125575ff93e9708f4
 - filename: packages/client/src/common/FilterBar/FilterBar.tsx
@@ -225,6 +225,8 @@ fileignoreconfig:
   checksum: 7a6fee67c4d98c6d43e79fe5131389ff4691a8525725a865356c817959a076e9
 - filename: packages/client/src/pages/EmissionsMetricsPage/EmissionsFilterBar/utils/FiltersUtil.ts
   checksum: 4a9658d657df170c27f66189a68561fb1699216c09b4513c2701508a6c06630e
+- filename: packages/client/src/pages/EmissionsMetricsPage/EmissionsMetricsPage.test.tsx
+  checksum: 16ab96f11c5fff523f3ffbcdb5c5fc5fd23daccbb5a57806f978b882259b32de
 - filename: packages/client/src/pages/EmissionsMetricsPage/FilterBar/FilterBar.tsx
   checksum: 1afc8c8a0ee61c1b92c332db9f90cb8677d0d1fcc810135c90b8635a19609268
 - filename: packages/client/src/pages/EmissionsMetricsPage/FilterBar/Filters/ServiceFilter/ServiceFilter.test.tsx
@@ -338,7 +340,7 @@ fileignoreconfig:
 - filename: packages/create-app/templates/default-app/packages/client/src/utils/helpers/transformData.ts
   checksum: 0d806eb083f87fba89e6cf56744269e50c76d2fd4a096a30f8ab7d16fcdcb991
 - filename: packages/gcp/src/__tests__/BillingExportTable.test.ts
-  checksum: a7b7558f8736ffc379fadf79d749cfa5d1470e204b88053e56d0fa13f42d0cd4
+  checksum: 806ca071f5f496e5bd682f0474543f9b6e6c7f5d687e8db89cf244371393188f
 - filename: packages/gcp/src/__tests__/GCPAccount.test.ts
   checksum: 26ef0caf65177a4e013ecff94012824cee58ceed48c09b29f7710712084ab9c4
 - filename: packages/gcp/src/lib/BillingExportTable.ts
