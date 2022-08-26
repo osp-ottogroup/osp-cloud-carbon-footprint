@@ -11,4 +11,4 @@ entrypoint: npm run start:webprod
 env_variables:
   CCF_CACHE_PATH: estimates.cache.json
 
-service_account: ccf-app@ogcs-btqm-osphub.iam.gserviceaccount.com
+service_account: ccf-app-prod@ogcs-btqm-osphub.iam.gserviceaccount.com
