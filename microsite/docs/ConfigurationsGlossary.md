@@ -129,3 +129,5 @@ slug: /configurations-glossary
 | REACT_APP_DATE_RANGE_VALUE       | 1             | number  | The quantity of REACT_APP_DATE_RANGE_TYPE to be used.                                                                                               |
 | REACT_APP_DATE_RANGE_TYPE        | year          | string  | The type of time period to be used. Values can be day(s), week(s), month(s), quarter(s), year(s)                                                    |
 | REACT_APP_MINIMAL_DATE_AGE       | 1             | number  | The amount of days to subtract from current date as end date.                                                                                       |
+| REACT_APP_DISABLE_CACHE          | true          | boolean | General cache config - Optionally disable and ignore the cache and request fresh estimates each time (true/false)                                   |
+| REACT_APP_PAGE_LIMIT             | 3000          | number  | When using MongoDB as cache, large results will be paginated and split into multiple requests. Use this to set a limit for results per page/request. |
