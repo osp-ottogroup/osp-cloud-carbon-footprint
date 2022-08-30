@@ -234,7 +234,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: node:14.18-alpine3.14
+      image: node:18-alpine3.15
     environment:
       name: staging
     env:
