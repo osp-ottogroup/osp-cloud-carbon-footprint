@@ -376,7 +376,7 @@ jobs:
           cp packages/api/create_server_env_file.sh dist-workspace/packages/api
           cp packages/api/app-production.yaml dist-workspace/packages/api
           echo $MONGODB_CERTIFICATE | awk -v RS='-+(BEGIN|END) (PRIVATE KEY|CERTIFICATE)-+' '{gsub(/ +/, "\n"); ORS=RT} 1' > dist-workspace/packages/api/mongo-credentials.pem
-
+  
           cp packages/client/app-production.yaml dist-workspace/packages/client
 
           # We need to set yarn to v1 because App Engine will only install with a yarn.lock file generated from this version.
