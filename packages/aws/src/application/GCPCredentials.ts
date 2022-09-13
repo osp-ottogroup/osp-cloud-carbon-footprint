@@ -40,7 +40,7 @@ export default class GCPCredentials extends Credentials {
       })
 
       await credentials.getPromise()
-
+      console.log('DEBUG got credentials!')
       this.accessKeyId = credentials.accessKeyId
       this.secretAccessKey = credentials.secretAccessKey
       this.sessionToken = credentials.sessionToken
