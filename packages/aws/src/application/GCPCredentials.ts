@@ -45,6 +45,7 @@ export default class GCPCredentials extends Credentials {
       this.expireTime = new Date(Date.now() + 1000 * 60 * 60) //Credentials expiration time to 1 hour
       callback()
     } catch (e) {
+      console.error(e.message)
       callback(e)
     }
   }
