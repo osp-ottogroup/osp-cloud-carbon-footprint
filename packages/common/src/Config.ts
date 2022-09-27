@@ -207,14 +207,10 @@ const getConfig = (): CCFConfig => ({
       'sa-east-1',
     ],
     CURRENT_SERVICES: [
-//      {
-//        key: 'ebs',
-//        name: 'EBS',
-//      },
-//      {
-//        key: 's3',
-//        name: 'S3',
-//      },
+      {
+        key: 'ebs',
+        name: 'EBS',
+      },
       {
         key: 'ec2',
         name: 'EC2',
