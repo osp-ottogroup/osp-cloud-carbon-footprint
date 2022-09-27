@@ -38,7 +38,7 @@ export default class GCPCredentials extends Credentials {
           WebIdentityToken: token,
         }),
       })
-
+      console.log('DEBUG before getPromise')
       await credentials.getPromise()
       console.log('DEBUG got credentials!')
       this.accessKeyId = credentials.accessKeyId
@@ -48,6 +48,7 @@ export default class GCPCredentials extends Credentials {
       callback()
     } catch (e) {
       console.error(e.message)
+      console.trace('DEBUG:TRACE')
       callback(e)
     }
   }
