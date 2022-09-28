@@ -214,7 +214,7 @@ const getConfig = (): CCFConfig => ({
       {
         key: 's3',
         name: 'S3',
-      },   
+      },
       {
         key: 'ec2',
         name: 'EC2',
