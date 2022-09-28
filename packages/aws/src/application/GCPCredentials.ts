@@ -55,19 +55,16 @@ export default class GCPCredentials extends Credentials {
 
     const authClient: GoogleAuthClient = await auth.getClient()
     const iamCredentials = new IAMCredentialsClient({ auth: auth })
-    console.log(`DEBUG ${JSON.stringify(<JWT>authClient)}`)
     const projectId = await auth.getProjectId()
 
     const authClientEmail = (<JWT>authClient).email
       ? (<JWT>authClient).email
       : `${projectId}@appspot.gserviceaccount.com`
-    console.log(`DEBUG: projects/-/serviceAccounts/${authClientEmail}`)
     const [res] = await iamCredentials.generateIdToken({
       name: `projects/-/serviceAccounts/${authClientEmail}`,
       audience: `${authClientEmail}`,
       includeEmail: true,
     })
-    console.log('DEBUG: after result.')
     return res.token
   }
 }
