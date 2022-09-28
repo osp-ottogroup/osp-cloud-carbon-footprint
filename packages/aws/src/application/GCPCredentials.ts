@@ -24,9 +24,7 @@ export default class GCPCredentials extends Credentials {
 
   async refresh(callback: (err?: AWSError) => void): Promise<void> {
     try {
-      console.log(`DEBUG proxyRoleName: ${this.proxyRoleName}`)
       const token = await this.getTokenId()
-      console.log(`DEBUG got token: ${token}`)
       const credentials = new ChainableTemporaryCredentials({
         params: {
           RoleArn: `arn:aws:iam::${this.accountId}:role/${this.targetRoleName}`,
@@ -38,9 +36,7 @@ export default class GCPCredentials extends Credentials {
           WebIdentityToken: token,
         }),
       })
-      console.log('DEBUG before getPromise')
       await credentials.getPromise()
-      console.log('DEBUG got credentials!')
       this.accessKeyId = credentials.accessKeyId
       this.secretAccessKey = credentials.secretAccessKey
       this.sessionToken = credentials.sessionToken
@@ -48,7 +44,6 @@ export default class GCPCredentials extends Credentials {
       callback()
     } catch (e) {
       console.error(e.message)
-      console.trace('DEBUG:TRACE')
       callback(e)
     }
   }
@@ -60,19 +55,16 @@ export default class GCPCredentials extends Credentials {
 
     const authClient: GoogleAuthClient = await auth.getClient()
     const iamCredentials = new IAMCredentialsClient({ auth: auth })
-    console.log(`DEBUG ${JSON.stringify(<JWT>authClient)}`)
     const projectId = await auth.getProjectId()
 
     const authClientEmail = (<JWT>authClient).email
       ? (<JWT>authClient).email
       : `${projectId}@appspot.gserviceaccount.com`
-    console.log(`DEBUG: projects/-/serviceAccounts/${authClientEmail}`)
     const [res] = await iamCredentials.generateIdToken({
       name: `projects/-/serviceAccounts/${authClientEmail}`,
       audience: `${authClientEmail}`,
       includeEmail: true,
     })
-    console.log('DEBUG: after result.')
     return res.token
   }
 }
