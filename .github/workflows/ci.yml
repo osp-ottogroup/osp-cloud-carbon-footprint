@@ -326,7 +326,7 @@ jobs:
     needs: deploy-staging
     runs-on: ubuntu-latest
     container:
-      image: node:18-alpine3.15 
+      image: node:18-alpine3.15
     environment:
       name: production
     env:
