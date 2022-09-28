@@ -157,7 +157,7 @@ const getConfig = (): CCFConfig => ({
       {
         key: 's3',
         name: 'S3',
-      },      
+      },   
       {
         key: 'ec2',
         name: 'EC2',
@@ -165,7 +165,7 @@ const getConfig = (): CCFConfig => ({
       {
         key: 'elasticache',
         name: 'ElastiCache',
-      },      
+      },
       {
         key: 'rds',
         name: 'RDS',
