@@ -170,10 +170,6 @@ const getConfig = (): CCFConfig => ({
         key: 'rds',
         name: 'RDS',
       },
-      {
-        key: 'lambda',
-        name: 'Lambda',
-      },
     ],
   },
   GCP: {
