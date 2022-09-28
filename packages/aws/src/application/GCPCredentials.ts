@@ -24,9 +24,7 @@ export default class GCPCredentials extends Credentials {
 
   async refresh(callback: (err?: AWSError) => void): Promise<void> {
     try {
-      console.log(`DEBUG proxyRoleName: ${this.proxyRoleName}`)
       const token = await this.getTokenId()
-      console.log(`DEBUG got token: ${token}`)
       const credentials = new ChainableTemporaryCredentials({
         params: {
           RoleArn: `arn:aws:iam::${this.accountId}:role/${this.targetRoleName}`,
