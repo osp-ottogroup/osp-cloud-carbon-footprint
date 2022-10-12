@@ -3,6 +3,7 @@
  */
 
 import * as mongo from 'mongodb'
+import moment, { Moment } from 'moment'
 import {
   configLoader,
   EstimationResult,
@@ -10,11 +11,15 @@ import {
   Logger,
 } from '@cloud-carbon-footprint/common'
 import MongoDbCacheManager from '../MongoDbCacheManager'
-import { MongoClient } from 'mongodb'
+import { getDatesWithinRequestTimeFrame } from '../common/helpers'
+import { EstimationRequest } from '../CreateValidRequest'
 
 jest.mock('mongodb', () => {
   return {
     MongoClient: jest.fn().mockImplementation(() => {
+      return {}
+    }),
+    ServerApiVersion: jest.fn().mockImplementation(() => {
       return {}
     }),
   }
@@ -27,24 +32,61 @@ jest.mock('@cloud-carbon-footprint/common', () => ({
   >),
   configLoader: jest.fn().mockImplementation(() => {
     return {
-      MONGO_URI: 'test-mongo-uri',
+      MONGODB: {
+        URI: 'test-mongo-uri',
+      },
     }
   }),
 }))
+
+jest.mock('../common/helpers', () => {
+  const requireActual = jest.requireActual('../common/helpers')
+  return {
+    ...requireActual,
+    getDatesWithinRequestTimeFrame: jest.fn(),
+  }
+})
+
+const mockGetDates = getDatesWithinRequestTimeFrame as jest.Mock
+const mockAggregation = jest.fn()
 
 describe('MongoDbCacheManager', () => {
   afterEach(() => {
     jest.resetAllMocks()
   })
 
-  it('connects to the mongodb server', async () => {
-    jest.spyOn(Logger.prototype, 'info').mockImplementation()
+  it('connects to the mongodb server with URI', async () => {
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation()
 
     const mongoDbCacheManager = new MongoDbCacheManager()
     await mongoDbCacheManager.createDbConnection()
 
     expect(mongo.MongoClient).toHaveBeenCalledWith('test-mongo-uri')
-    expect(Logger.prototype.info).toHaveBeenCalledWith(
+    expect(Logger.prototype.debug).toHaveBeenCalledWith(
+      'Successfully connected to the mongoDB client',
+    )
+  })
+
+  it('connects to the mongodb server with credentials', async () => {
+    ;(configLoader as jest.Mock).mockReturnValue({
+      ...configLoader(),
+      MONGODB: {
+        URI: 'test-mongo-uri',
+        CREDENTIALS: 'test-mongo-credentials',
+      },
+    })
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation()
+
+    const mongoDbCacheManager = new MongoDbCacheManager()
+    await mongoDbCacheManager.createDbConnection()
+
+    expect(mongo.MongoClient).toHaveBeenCalledWith('test-mongo-uri', {
+      serverApi: undefined,
+      sslCert: 'test-mongo-credentials',
+      sslKey: 'test-mongo-credentials',
+    })
+
+    expect(Logger.prototype.debug).toHaveBeenCalledWith(
       'Successfully connected to the mongoDB client',
     )
   })
@@ -52,7 +94,9 @@ describe('MongoDbCacheManager', () => {
   it('throws an error when there is no uri set', async () => {
     ;(configLoader as jest.Mock).mockReturnValue({
       ...configLoader(),
-      MONGO_URI: '',
+      MONGODB: {
+        URI: '',
+      },
     })
 
     jest.spyOn(Logger.prototype, 'warn').mockImplementation()
@@ -67,7 +111,7 @@ describe('MongoDbCacheManager', () => {
   })
 
   describe('gets estimates', () => {
-    const mockClient: Partial<MongoClient> = {
+    const mockClient: Partial<mongo.MongoClient> = {
       db: jest.fn().mockReturnThis(),
       close: jest.fn(),
       connect: jest.fn(),
@@ -107,7 +151,7 @@ describe('MongoDbCacheManager', () => {
       jest
         .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
         .mockImplementation(async () => {
-          mongoDbCacheManager.mongoClient = mockClient as MongoClient
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
         })
 
       const loadEstimatesSpy = jest.spyOn(mongoDbCacheManager, 'loadEstimates')
@@ -125,7 +169,7 @@ describe('MongoDbCacheManager', () => {
       jest
         .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
         .mockImplementation(async () => {
-          mongoDbCacheManager.mongoClient = mockClient as MongoClient
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
         })
 
       const testErrorMessage = 'Example error'
@@ -145,7 +189,7 @@ describe('MongoDbCacheManager', () => {
   })
 
   describe('loads estimates', () => {
-    let mockClient: Partial<MongoClient>
+    let mockClient: Partial<mongo.MongoClient>
     const testDate = new Date('2022-01-01')
     const mockEstimates: EstimationResult[] = [
       {
@@ -162,6 +206,8 @@ describe('MongoDbCacheManager', () => {
       endDate: new Date('2022-01-02'),
       ignoreCache: false,
       groupBy: 'day',
+      skip: 0,
+      limit: 1,
     }
 
     beforeEach(() => {
@@ -173,7 +219,7 @@ describe('MongoDbCacheManager', () => {
             }),
           })),
           collection: jest.fn().mockImplementation(() => ({
-            aggregate: jest.fn().mockImplementation(() => ({
+            aggregate: mockAggregation.mockImplementation(() => ({
               toArray: jest.fn().mockResolvedValue(mockEstimates),
             })),
           })),
@@ -188,14 +234,14 @@ describe('MongoDbCacheManager', () => {
     })
 
     it('loads estimates from a mongo database collection', async () => {
-      jest.spyOn(console, 'info').mockImplementation()
+      jest.spyOn(Logger.prototype, 'info').mockImplementation()
 
       const mongoDbCacheManager = new MongoDbCacheManager()
 
       jest
         .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
         .mockImplementation(async () => {
-          mongoDbCacheManager.mongoClient = mockClient as MongoClient
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
         })
 
       await mongoDbCacheManager.createDbConnection()
@@ -205,14 +251,16 @@ describe('MongoDbCacheManager', () => {
         request,
       )
 
-      expect(console.info).toHaveBeenCalledWith(
-        'Successfully connected to database collection: estimates-by-day',
+      expect(Logger.prototype.info).toHaveBeenCalledWith(
+        `Paginating documents: ${request.skip} to ${
+          request.skip + request.limit
+        }`,
       )
       expect(estimates).toEqual(mockEstimates)
     })
 
     it('creates a new mongo collection if one does not exist', async () => {
-      const mockClientWithoutCollection: Partial<MongoClient> = {
+      const mockClientWithoutCollection: Partial<mongo.MongoClient> = {
         db: jest.fn().mockImplementation(() => {
           return {
             createCollection: jest.fn(),
@@ -231,12 +279,12 @@ describe('MongoDbCacheManager', () => {
       }
 
       const mongoDbCacheManager = new MongoDbCacheManager()
-
+      jest.spyOn(Logger.prototype, 'info').mockImplementation()
       jest
         .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
         .mockImplementation(async () => {
           mongoDbCacheManager.mongoClient =
-            mockClientWithoutCollection as MongoClient
+            mockClientWithoutCollection as mongo.MongoClient
         })
 
       await mongoDbCacheManager.createDbConnection()
@@ -246,10 +294,77 @@ describe('MongoDbCacheManager', () => {
         request,
       )
 
-      expect(console.info).toHaveBeenCalledWith(
-        'Creating new database collection: estimates-by-day',
-      )
       expect(estimates).toEqual([])
+    })
+
+    it.each([
+      [['cloudProviders', ['test-cloud-providers'], 'cloudProvider']],
+      [['accounts', ['test-accounts'], 'accountId', ,]],
+      [['services', ['test-services'], 'serviceName']],
+      [['regions', ['test-regions'], 'region']],
+      [['tags', { 'test-key': ['test-tag'] }, 'tags.test-key']],
+    ])('determines matching filters', async (filter) => {
+      const request: EstimationRequest = {
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-01-02'),
+        limit: 1,
+        skip: 0,
+        [`${filter[0]}`]: filter[1],
+      }
+
+      const mongoDbCacheManager = new MongoDbCacheManager()
+
+      jest
+        .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
+        .mockImplementation(async () => {
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
+        })
+
+      await mongoDbCacheManager.createDbConnection()
+      const estimates = await mongoDbCacheManager.loadEstimates(
+        mongoDbCacheManager.mongoClient.db(mongoDbCacheManager.mongoDbName),
+        'estimates-by-day',
+        request,
+      )
+
+      const tagsFilter =
+        filter[0] === 'tags' ? filter[1]['test-key'] : filter[1]
+
+      const aggregation = [
+        {
+          $match: {
+            [`${filter[2]}`]: { $in: tagsFilter },
+            timestamp: {
+              $gte: new Date('2022-01-01T00:00:00.000Z'),
+              $lte: new Date('2022-01-02T00:00:00.000Z'),
+            },
+          },
+        },
+        { $sort: { _id: 1, timestamp: 1 } },
+        { $skip: 0 },
+        { $limit: 1 },
+        {
+          $group: {
+            _id: '$timestamp',
+            groupBy: { $first: '$groupBy' },
+            serviceEstimates: { $push: '$$ROOT' },
+            timestamp: { $first: '$timestamp' },
+          },
+        },
+        {
+          $unset: [
+            '_id',
+            'serviceEstimates._id',
+            'serviceEstimates.timestamp',
+            'serviceEstimates.groupBy',
+          ],
+        },
+      ]
+
+      expect(mockAggregation).toHaveBeenCalledWith(aggregation, {
+        allowDiskUse: true,
+      })
+      expect(estimates).toEqual(mockEstimates)
     })
   })
 
@@ -326,7 +441,7 @@ describe('MongoDbCacheManager', () => {
         .fn()
         .mockImplementation(() => ({ insertMany: mockInsertMany }))
 
-      const mockClient: Partial<MongoClient> = {
+      const mockClient: Partial<mongo.MongoClient> = {
         db: jest.fn().mockImplementation(() => {
           return {
             collection: mockCollection,
@@ -339,7 +454,7 @@ describe('MongoDbCacheManager', () => {
       jest
         .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
         .mockImplementation(async () => {
-          mongoDbCacheManager.mongoClient = mockClient as MongoClient
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
         })
 
       await mongoDbCacheManager.setEstimates(mockEstimates, 'day')
@@ -390,6 +505,112 @@ describe('MongoDbCacheManager', () => {
       expect(mockCollection).toHaveBeenCalledWith('estimates-by-day')
       expect(mockInsertMany).toHaveBeenCalledWith(expectedInsertedEstimates)
       expect(mockClient.close).toHaveBeenCalled()
+    })
+  })
+  describe('gets missing dates', () => {
+    let mockClient: Partial<mongo.MongoClient>
+    const testDate = new Date('2022-01-01')
+    const mockMissingDates: Moment[] = [
+      moment.utc('2022-01-01'),
+      moment.utc('2022-01-02'),
+    ]
+
+    const request = {
+      startDate: testDate,
+      endDate: new Date('2022-01-02'),
+      ignoreCache: false,
+      groupBy: 'day',
+      skip: 0,
+      limit: 1,
+    }
+
+    beforeEach(() => {
+      mockClient = {
+        db: jest.fn().mockImplementation(() => ({
+          listCollections: jest.fn().mockImplementation(() => ({
+            next: jest.fn().mockImplementation((callback) => {
+              callback(undefined, { name: 'test-collection' })
+            }),
+          })),
+          collection: jest.fn().mockImplementation(() => ({
+            countDocuments: jest.fn().mockResolvedValue([{ dates: [] }]),
+            aggregate: jest.fn().mockImplementation(() => ({
+              toArray: jest.fn().mockResolvedValue([{ dates: ['2022-01-01'] }]),
+            })),
+          })),
+        })),
+        close: jest.fn(),
+        connect: jest.fn(),
+      }
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+    })
+
+    it('loads dates from mongo to calculate missing dates from request', async () => {
+      const mongoDbCacheManager = new MongoDbCacheManager()
+
+      jest
+        .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
+        .mockImplementation(async () => {
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
+        })
+
+      mockGetDates.mockReturnValue(mockMissingDates)
+
+      await mongoDbCacheManager.createDbConnection()
+      const missingDates = await mongoDbCacheManager.getMissingDates(
+        request,
+        'day',
+      )
+
+      expect(JSON.stringify(missingDates)).toEqual(
+        JSON.stringify([moment.utc(new Date('2022-01-02'))]),
+      )
+    })
+
+    it('returns all dates in range for missing dates if ignoreCache=true', async () => {
+      const mongoDbCacheManager = new MongoDbCacheManager()
+
+      const newRequest = {
+        ...request,
+        ignoreCache: true,
+      }
+
+      mockGetDates.mockReturnValue(mockMissingDates)
+
+      const missingDates = await mongoDbCacheManager.getMissingDates(
+        newRequest,
+        'day',
+      )
+
+      expect(JSON.stringify(missingDates)).toEqual(
+        JSON.stringify(mockMissingDates),
+      )
+    })
+
+    it('hits an error getting missing dates if requested dates is undefined', async () => {
+      const mongoDbCacheManager = new MongoDbCacheManager()
+
+      mockGetDates.mockReturnValue(undefined)
+
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation()
+
+      jest
+        .spyOn(MongoDbCacheManager.prototype, 'createDbConnection')
+        .mockImplementation(async () => {
+          mongoDbCacheManager.mongoClient = mockClient as mongo.MongoClient
+        })
+
+      await mongoDbCacheManager.createDbConnection()
+      const missingDates = await mongoDbCacheManager.getMissingDates(
+        request,
+        'day',
+      )
+
+      expect(Logger.prototype.warn).toHaveBeenCalled()
+      expect(missingDates).toEqual([])
     })
   })
 })

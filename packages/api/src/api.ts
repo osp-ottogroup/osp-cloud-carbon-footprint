@@ -6,8 +6,8 @@ import express from 'express'
 
 import {
   App,
-  CreateValidFootprintRequest,
-  CreateValidRecommendationsRequest,
+  createValidFootprintRequest,
+  createValidRecommendationsRequest,
   FootprintEstimatesRawRequest,
   RecommendationsRawRequest,
 } from '@cloud-carbon-footprint/app'
@@ -43,15 +43,20 @@ const FootprintApiMiddleware = async function (
     groupBy: req.query.groupBy?.toString(),
     limit: req.query.limit?.toString(),
     skip: req.query.skip?.toString(),
+    cloudProviders: req.query.cloudProviders as string[],
+    accounts: req.query.accounts as string[],
+    services: req.query.services as string[],
+    regions: req.query.regions as string[],
+    tags: JSON.stringify(req.query.tags),
   }
   apiLogger.info(`Footprint API request started.`)
-  if (!rawRequest.groupBy)
-    apiLogger.warn(
-      'GroupBy parameter not specified. This will be required in the future.',
-    )
+  if (!rawRequest.groupBy) {
+    apiLogger.warn('GroupBy parameter not specified, adopting default "day"')
+    rawRequest.groupBy = 'day'
+  }
   const footprintApp = new App()
   try {
-    const estimationRequest = CreateValidFootprintRequest(rawRequest)
+    const estimationRequest = createValidFootprintRequest(rawRequest)
     const estimationResults = await footprintApp.getCostAndEstimates(
       estimationRequest,
     )
@@ -96,7 +101,7 @@ const RecommendationsApiMiddleware = async function (
   apiLogger.info(`Recommendations API request started`)
   const footprintApp = new App()
   try {
-    const estimationRequest = CreateValidRecommendationsRequest(rawRequest)
+    const estimationRequest = createValidRecommendationsRequest(rawRequest)
     const recommendations = await footprintApp.getRecommendations(
       estimationRequest,
     )

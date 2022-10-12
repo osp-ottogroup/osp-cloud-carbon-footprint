@@ -5,7 +5,6 @@
 import { ConsumptionManagementClient } from '@azure/arm-consumption'
 
 import {
-  configLoader,
   EstimationResult,
   GroupBy,
   LookupTableInput,
@@ -44,11 +43,6 @@ jest.mock('@cloud-carbon-footprint/common', () => ({
     string,
     unknown
   >),
-  configLoader: jest.fn().mockImplementation(() => {
-    return {
-      GROUP_QUERY_RESULTS_BY: 'day',
-    }
-  }),
 }))
 
 jest.mock('@azure/arm-consumption', () => {
@@ -66,11 +60,6 @@ jest.mock('@cloud-carbon-footprint/common', () => ({
     string,
     unknown
   >),
-  configLoader: jest.fn().mockImplementation(() => {
-    return {
-      GROUP_QUERY_RESULTS_BY: 'day',
-    }
-  }),
 }))
 
 describe('Azure Consumption Management Service', () => {
@@ -752,8 +741,8 @@ describe('Azure Consumption Management Service', () => {
             region: 'northeurope',
           },
           {
-            kilowattHours: 0.03412658672925128,
-            co2e: 0.000009507667062769406,
+            kilowattHours: 0,
+            co2e: 0,
             usesAverageCPUConstant: false,
             cloudProvider: 'AZURE',
             accountId: subscriptionId,
@@ -782,8 +771,8 @@ describe('Azure Consumption Management Service', () => {
             usesAverageCPUConstant: false,
           },
           {
-            kilowattHours: 0.1706329336462564,
-            co2e: 0.00004753833531384703,
+            kilowattHours: 0,
+            co2e: 0,
             usesAverageCPUConstant: false,
             cloudProvider: 'AZURE',
             accountId: subscriptionId,
@@ -812,8 +801,8 @@ describe('Azure Consumption Management Service', () => {
             usesAverageCPUConstant: false,
           },
           {
-            kilowattHours: 0.1365063469170051,
-            co2e: 0.00003803066825107762,
+            kilowattHours: 0,
+            co2e: 0,
             usesAverageCPUConstant: false,
             cloudProvider: 'AZURE',
             accountId: subscriptionId,
@@ -842,8 +831,8 @@ describe('Azure Consumption Management Service', () => {
             usesAverageCPUConstant: false,
           },
           {
-            kilowattHours: 0.21841015506720818,
-            co2e: 0.0000608490692017242,
+            kilowattHours: 0,
+            co2e: 0,
             usesAverageCPUConstant: false,
             cloudProvider: 'AZURE',
             accountId: subscriptionId,
@@ -864,9 +853,9 @@ describe('Azure Consumption Management Service', () => {
             accountId: 'test-subscription-id',
             accountName: 'test-subscription',
             cloudProvider: 'AZURE',
-            co2e: 0.0000479519442895112,
+            co2e: 0,
             cost: 0.003168316832,
-            kilowattHours: 0.1365063469170051,
+            kilowattHours: 0,
             region: 'All Regions',
             serviceName: 'Azure DNS',
             usesAverageCPUConstant: false,
@@ -1142,16 +1131,6 @@ describe('Azure Consumption Management Service', () => {
   })
 
   describe('When group query results by week is true', () => {
-    beforeEach(() => {
-      ;(configLoader as jest.Mock).mockReturnValue({
-        GROUP_QUERY_RESULTS_BY: 'week',
-      })
-    })
-
-    afterEach(() => {
-      jest.restoreAllMocks()
-    })
-
     it('Returns estimates for Compute grouped by week', async () => {
       mockUsageDetails.list.mockResolvedValue(
         mockConsumptionManagementResponseOne,

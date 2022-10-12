@@ -7,13 +7,13 @@ import {
   EmissionRatioResult,
   EstimationResult,
   GroupBy,
+  Logger,
   LookupTableInput,
   LookupTableOutput,
   OnPremiseDataInput,
   OnPremiseDataOutput,
   RecommendationResult,
   reduceByTimestamp,
-  Logger,
 } from '@cloud-carbon-footprint/common'
 import {
   AZURE_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
@@ -23,7 +23,7 @@ import {
   AWS_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
   AWSAccount,
 } from '@cloud-carbon-footprint/aws'
-import { getGCPEmissionsFactors, GCPAccount } from '@cloud-carbon-footprint/gcp'
+import { GCPAccount, getGCPEmissionsFactors } from '@cloud-carbon-footprint/gcp'
 import { OnPremise } from '@cloud-carbon-footprint/on-premise'
 
 import cache from './Cache'
@@ -40,8 +40,7 @@ export default class App {
     const appLogger = new Logger('App')
     const startDate = request.startDate
     const endDate = request.endDate
-    const grouping =
-      (request.groupBy as GroupBy) || configLoader().GROUP_QUERY_RESULTS_BY
+    const grouping = request.groupBy as GroupBy
     const config = configLoader()
     const AWS = config.AWS
     const GCP = config.GCP

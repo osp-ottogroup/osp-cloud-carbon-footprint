@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { equals } from 'ramda'
 import axios from 'axios'
 
 import { EstimationResult } from '@cloud-carbon-footprint/common'
@@ -22,6 +23,84 @@ export interface UseRemoteFootprintServiceParams {
   minLoadTimeMs?: number
   groupBy?: string
   limit?: number
+}
+
+const concatenateResults = (estimates, newEstimates) => {
+  const equalsLastDataObject = checkForEqualObjects(newEstimates, estimates)
+  if (estimates.length == 0 && equalsLastDataObject) {
+    return newEstimates
+  }
+
+  if (!newEstimates || !(newEstimates.length > 0)) {
+    return estimates
+  }
+
+  const existingDates = estimates.reduce((dates, estimate) => {
+    dates.push(moment.utc(estimate.timestamp))
+    return dates
+  }, [])
+
+  let updatedEstimates
+  newEstimates.map((newEstimate) => {
+    const newDateExists = !!existingDates.find((date) => {
+      return (
+        new Date(date).getTime() == new Date(newEstimate.timestamp).getTime()
+      )
+    })
+
+    if (newDateExists) {
+      const elementIndex = estimates.findIndex((estimate) =>
+        moment
+          .utc(estimate.timestamp)
+          .isSame(moment.utc(newEstimate.timestamp)),
+      )
+      const filteredEstimate = estimates[elementIndex]
+      const concatenatedEstimates = filteredEstimate?.serviceEstimates.concat(
+        newEstimate.serviceEstimates,
+      )
+      filteredEstimate.serviceEstimates = concatenatedEstimates
+      estimates[elementIndex] = filteredEstimate
+      updatedEstimates = estimates
+    } else {
+      updatedEstimates = estimates.concat([newEstimate])
+    }
+  })
+
+  return updatedEstimates
+}
+
+const checkForEqualObjects = (
+  newEstimates: EstimationResult[],
+  cachedEstimates: EstimationResult[],
+) => {
+  if (!cachedEstimates || cachedEstimates?.length == 0) return false
+  if (!newEstimates || cachedEstimates?.length == 0) return true
+
+  const newServiceEstimates =
+    newEstimates[newEstimates?.length - 1]?.serviceEstimates
+  const lastNewDataObject = newServiceEstimates[newServiceEstimates?.length - 1]
+
+  const cachedServiceEstimates =
+    cachedEstimates[cachedEstimates?.length - 1]?.serviceEstimates
+  const lastCachedDataObject =
+    cachedServiceEstimates[cachedServiceEstimates?.length - 1]
+
+  return equals(lastNewDataObject, lastCachedDataObject)
+}
+
+const checkForLoopExit = (
+  lastDataLength: number,
+  data: EstimationResult[],
+  params: UseRemoteFootprintServiceParams,
+  estimates: EstimationResult[],
+) => {
+  const equalsLastDataObject = checkForEqualObjects(data, estimates)
+
+  lastDataLength = data?.length || 0
+  if (params.ignoreCache || data == undefined || equalsLastDataObject)
+    lastDataLength = 0
+
+  return lastDataLength
 }
 
 const useRemoteFootprintService = (
@@ -45,12 +124,9 @@ const useRemoteFootprintService = (
 
       let estimates: EstimationResult[] = data
       try {
-        let lastDate = moment.utc(start)
-        const endDate = moment.utc(end)
+        let lastDataLength = 1
         let skip = 0
-        while (
-          !lastDate.isSame(endDate, params.groupBy as moment.unitOfTime.StartOf)
-        ) {
+        while (lastDataLength > 0) {
           const res = await axios.get(`${params.baseUrl}/footprint`, {
             params: {
               start: start,
@@ -62,11 +138,13 @@ const useRemoteFootprintService = (
               skip,
             },
           })
-          estimates = estimates.concat(res.data)
-          // TODO: Clean up exit condition for last date into single if-statement. If empty response or ignoreCache is true, we should exit.
-          lastDate =
-            moment.utc(res.data[res.data.length - 1]?.timestamp) ?? endDate
-          if (params.ignoreCache) lastDate = endDate
+          lastDataLength = checkForLoopExit(
+            lastDataLength,
+            res?.data,
+            params,
+            estimates,
+          )
+          estimates = concatenateResults(estimates, res?.data)
           skip += params.limit
         }
       } catch (e) {

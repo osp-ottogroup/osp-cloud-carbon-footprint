@@ -14,12 +14,7 @@ import GoogleCloudCacheManager from './GoogleCloudCacheManager'
 import LocalCacheManager from './LocalCacheManager'
 import CacheManager from './CacheManager'
 import MongoDbCacheManager from './MongoDbCacheManager'
-import {
-  concat,
-  fillDates,
-  getMissingDates,
-  paginateRequest,
-} from './common/helpers'
+import { concat, fillDates, filterCachedEstimates } from './common/helpers'
 
 /*
  This function provides a decorator. When this decorates a function, that
@@ -48,62 +43,56 @@ export default function cache(): any {
       const getCostAndEstimates = (request: EstimationRequest) =>
         decoratedFunction.apply(target, [request])
 
-      const grouping =
-        (request.groupBy as GroupBy) || configLoader().GROUP_QUERY_RESULTS_BY
-
-      // Determine if cache is ignored and get fresh estimates
-      if (request.ignoreCache && !process.env.TEST_MODE) {
-        cacheLogger.info('Ignoring cache...')
-        const [newEstimates] = await getEstimatesForMissingDates(
-          getCostAndEstimates,
-          request,
-        )
-        return newEstimates
-      }
+      const grouping = request.groupBy as GroupBy
 
       // Configure cache manager service and load existing cached estimates (if any)
       const cacheManager =
         cacheManagerServices[configLoader().CACHE_MODE] ||
         cacheManagerServices.LOCAL
 
-      if (configLoader().CACHE_MODE === 'MONGODB') {
-        request = paginateRequest(request)
+      const missingDates: Moment[] = await cacheManager.getMissingDates(
+        request,
+        grouping,
+      )
+
+      // Determine if cache is ignored and get fresh estimates
+      // TODO: Refactor this so cache isn't aware of test environment
+      if (request.ignoreCache && !process.env.TEST_MODE) {
+        cacheLogger.info('Ignoring cache...')
+        return await getEstimatesForMissingDates(
+          getCostAndEstimates,
+          request,
+          missingDates,
+        )
+      }
+
+      let newEstimates: EstimationResult[] = []
+      if (missingDates.length > 0) {
+        newEstimates = await getEstimatesForMissingDates(
+          getCostAndEstimates,
+          request,
+          missingDates,
+        )
+
+        // Write missing estimates to cache
+        if (newEstimates.length > 0) {
+          const estimatesToPersist = fillDates(
+            missingDates,
+            newEstimates,
+            grouping,
+          )
+          cacheLogger.info('Setting new estimates to cache...')
+          if (estimatesToPersist.length > 0) {
+            await cacheManager.setEstimates(estimatesToPersist, grouping)
+          }
+        }
       }
 
       const cachedEstimates: EstimationResult[] =
         await cacheManager.getEstimates(request, grouping)
 
-      // TODO: Refactor this so cache isn't aware of test environment
-      if (process.env.TEST_MODE) return cachedEstimates
-
-      const [newEstimates, missingDates] = await getEstimatesForMissingDates(
-        getCostAndEstimates,
-        request,
-        cachedEstimates,
-      )
-
-      // Write missing estimates to cache
-      if (newEstimates.length > 0) {
-        const estimatesToPersist = fillDates(
-          missingDates,
-          newEstimates,
-          grouping,
-        )
-        cacheLogger.info('Setting new estimates to cache file...')
-        if (estimatesToPersist.length > 0) {
-          await cacheManager.setEstimates(estimatesToPersist, grouping)
-        }
-      }
-
       // Filter out empty estimates
-      const filteredCachedEstimates = cachedEstimates.filter(
-        ({ serviceEstimates }) => {
-          return serviceEstimates.length !== 0
-        },
-      )
-
-      // Return new estimates with cached estimates
-      return concat(filteredCachedEstimates, newEstimates)
+      return concat(filterCachedEstimates(cachedEstimates), [])
     }
   }
 }
@@ -120,16 +109,14 @@ export default function cache(): any {
 const getEstimatesForMissingDates = async (
   getCostAndEstimates: any,
   request: EstimationRequest,
-  cachedEstimates: EstimationResult[] = [],
-): Promise<[EstimationResult[], Moment[]]> => {
-  const missingDates = getMissingDates(cachedEstimates, request)
+  missingDates: Moment[],
+): Promise<EstimationResult[]> => {
   const missingEstimates = getMissingDataRequests(missingDates, request).map(
     (request) => {
       return getCostAndEstimates(request)
     },
   )
-  const newEstimates = (await Promise.all(missingEstimates)).flat()
-  return [newEstimates, missingDates]
+  return (await Promise.all(missingEstimates)).flat()
 }
 
 /**

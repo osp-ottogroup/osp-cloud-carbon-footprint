@@ -17,6 +17,7 @@ export default class BillingExportRow extends BillingDataRow {
     this.vCpuHours = this.getVCpuHours()
     this.gpuHours = this.usageAmount / 3600
     this.timestamp = new Date((init.timestamp as unknown as BigQueryDate).value)
+
     // These service have very large amount of usage with units 'seconds' and 'requests'.
     // This significantly overestimates their footprint, so override their usage unit to take this into account.
     if (

@@ -2,11 +2,12 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import moment from 'moment'
-import { MongoClient } from 'mongodb'
+import moment, { Moment } from 'moment'
+import { MongoClient, ServerApiVersion } from 'mongodb'
 import { configLoader, EstimationResult } from '@cloud-carbon-footprint/common'
 import CacheManager from './CacheManager'
 import { EstimationRequest } from './CreateValidRequest'
+import { getDatesWithinRequestTimeFrame } from './common/helpers'
 
 export default class MongoDbCacheManager extends CacheManager {
   mongoClient: MongoClient
@@ -17,10 +18,18 @@ export default class MongoDbCacheManager extends CacheManager {
   }
 
   async createDbConnection() {
-    const mongoURI = configLoader().MONGO_URI
-    if (mongoURI) {
+    const mongoURI = configLoader().MONGODB.URI
+    const mongoCredentials = configLoader().MONGODB.CREDENTIALS
+    if (mongoCredentials && mongoURI) {
+      this.mongoClient = new MongoClient(mongoURI, {
+        sslKey: mongoCredentials,
+        sslCert: mongoCredentials,
+        serverApi: ServerApiVersion.v1,
+      })
+      this.cacheLogger.debug('Successfully connected to the mongoDB client')
+    } else if (mongoURI) {
       this.mongoClient = new MongoClient(mongoURI)
-      this.cacheLogger.info('Successfully connected to the mongoDB client')
+      this.cacheLogger.debug('Successfully connected to the mongoDB client')
     } else {
       this.cacheLogger.warn(
         `There was an error connecting to the MongoDB client, please provide a valid URI`,
@@ -42,22 +51,38 @@ export default class MongoDbCacheManager extends CacheManager {
     )
     const endDate = new Date(request.endDate)
 
+    this.cacheLogger.info(
+      `Paginating documents: ${request.skip} to ${
+        request.skip + request.limit
+      }`,
+    )
+    const matchObject = this.createAggregationMatch(request, startDate, endDate)
+
     return new Promise(function (resolve, reject) {
       db.listCollections({ name: collectionName }).next(
         async (err: Error, collectionInfo: any) => {
           if (err) reject(err)
           if (collectionInfo) {
             const estimates = db.collection(collectionName)
-            console.info(
-              `Successfully connected to database collection: ${collectionName}`,
-            )
 
             resolve(
               estimates
                 .aggregate(
                   [
                     {
-                      $match: { timestamp: { $gte: startDate, $lte: endDate } },
+                      $match: matchObject,
+                    },
+                    {
+                      $sort: {
+                        timestamp: 1,
+                        _id: 1,
+                      },
+                    },
+                    {
+                      $skip: request.skip,
+                    },
+                    {
+                      $limit: request.limit,
                     },
                     {
                       $group: {
@@ -82,7 +107,6 @@ export default class MongoDbCacheManager extends CacheManager {
             )
           } else {
             // The collection does not exist - so we can create it
-            console.info(`Creating new database collection: ${collectionName}`)
             db.createCollection(collectionName)
             resolve([])
           }
@@ -91,11 +115,46 @@ export default class MongoDbCacheManager extends CacheManager {
     })
   }
 
+  private createAggregationMatch(
+    request: EstimationRequest,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const { cloudProviders, accounts, services, regions, tags } = request
+    const filterTable = {
+      cloudProvider: cloudProviders,
+      accountId: accounts,
+      serviceName: services,
+      region: regions,
+    }
+    let matchObject = {
+      timestamp: { $gte: startDate, $lte: endDate },
+    }
+
+    for (const [key, value] of Object.entries(filterTable)) {
+      if (value && value.length > 0) {
+        matchObject = {
+          [key]: { $in: value },
+          ...matchObject,
+        }
+      }
+    }
+
+    if (tags && Object.entries(tags)[0])
+      for (const [key, value] of Object.entries(tags)) {
+        matchObject = {
+          [`tags.${key}`]: { $in: value },
+          ...matchObject,
+        }
+      }
+
+    return matchObject
+  }
+
   async getEstimates(
     request: EstimationRequest,
     grouping: string,
   ): Promise<EstimationResult[]> {
-    this.cacheLogger.info('Using mongo database...')
     let savedEstimates: EstimationResult[] = []
     try {
       await this.createDbConnection()
@@ -149,9 +208,92 @@ export default class MongoDbCacheManager extends CacheManager {
       })
 
       await collection.insertMany(newEstimates)
+    } catch (e) {
+      this.cacheLogger.warn(
+        `There was an error setting estimates from MongoDB: ${e.message}`,
+      )
     } finally {
       // Ensures that the client will close when you finish/error
       await this.mongoClient.close()
+    }
+  }
+
+  async getMissingDates(
+    request: EstimationRequest,
+    grouping: string,
+  ): Promise<Moment[]> {
+    this.cacheLogger.info('Using mongo database...')
+    const requestedDates = getDatesWithinRequestTimeFrame(grouping, request)
+
+    if (request.ignoreCache) {
+      return requestedDates
+    }
+
+    try {
+      await this.createDbConnection()
+      await this.mongoClient.connect()
+
+      const collectionName = `estimates-by-${grouping}`
+      const database = this.mongoClient.db(this.mongoDbName)
+
+      const aggResult: any = await new Promise((resolve, reject) => {
+        database
+          .listCollections({ name: collectionName })
+          .next(async (err: Error, collectionInfo: any) => {
+            if (err) reject(err)
+
+            if (!collectionInfo) {
+              resolve([{ dates: [] }])
+            }
+
+            const estimates = database.collection(collectionName)
+            await estimates.countDocuments((err, count) => {
+              if (!err && count === 0) {
+                resolve([{ dates: [] }])
+              }
+            })
+
+            resolve(
+              await estimates
+                .aggregate(
+                  [
+                    {
+                      $group: {
+                        _id: null,
+                        dates: {
+                          $addToSet: {
+                            $dateToString: {
+                              date: '$timestamp',
+                              format: '%Y-%m-%d',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                  { allowDiskUse: true },
+                )
+                .toArray(),
+            )
+          })
+      })
+
+      const cachedDates = aggResult[0].dates
+      const missingDates = requestedDates.filter((a) => {
+        const index = cachedDates.findIndex((cachedDate: string) =>
+          moment.utc(cachedDate).isSame(a),
+        )
+        return index < 0
+      })
+
+      return missingDates.map((date: Moment) => {
+        return date
+      })
+    } catch (e) {
+      this.cacheLogger.warn(
+        `There was an error getting missing dates from MongoDB: ${e.message}`,
+      )
+      return []
     }
   }
 }

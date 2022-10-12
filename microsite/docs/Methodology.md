@@ -8,7 +8,7 @@ slug: /methodology
 
 Global greenhouse gas emissions from the tech sector are on par or larger than the aviation industry, at around
 [3% for ICT](https://c2e2.unepdtu.org/wp-content/uploads/sites/3/2020/03/greenhouse-gas-emissions-in-the-ict-sector.pdf)
-and [2% for aviation](https://www.atag.org/facts-figures.html) respectively. Within ICT, data centers consume around 1%
+and [2% for aviation](https://www.atag.org/facts-figures.html) respectively. Within ICT, data centers are responsible for around 1%
 of greenhouse gas emissions and
 [global electricity usage](https://www.iea.org/reports/data-centres-and-data-transmission-networks).
 Currently, most cloud providers do not disclose energy or carbon emissions from cloud usage to their customers
@@ -419,8 +419,8 @@ To understand in more detail how we are calculating embodied emissions, please r
 
 #### AWS
 
-- Average Minimum Watts (0% Cpu Utilization): 0.74
-- Average Maximum Watts (100% Cpu Utilization): 3.5
+- Average Minimum Watts (0% CPU Utilization): 0.74
+- Average Maximum Watts (100% CPU Utilization): 3.5
 - Average CPU Utilization for hyperscale data centers: 50%
 - HDD Storage Watt Hours / Terabyte: 0.65
 - SSD Storage Watt Hours / Terabyte: 1.2
@@ -430,8 +430,8 @@ To understand in more detail how we are calculating embodied emissions, please r
 
 #### GCP
 
-- Median Minimum Watts (0% Cpu Utilization): 0.71
-- Median Maximum Watts (100% Cpu Utilization): 4.26
+- Median Minimum Watts (0% CPU Utilization): 0.71
+- Median Maximum Watts (100% CPU Utilization): 4.26
 - Average CPU Utilization for hyperscale data centers: 50%
 - HDD Storage Watt Hours / Terabyte: 0.65
 - SSD Storage Watt Hours / Terabyte: 1.2
@@ -441,8 +441,8 @@ To understand in more detail how we are calculating embodied emissions, please r
 
 #### Azure
 
-- Average Minimum Watts (0% Cpu Utilization): 0.78
-- Average Maximum Watts (100% Cpu Utilization): 3.76
+- Average Minimum Watts (0% CPU Utilization): 0.78
+- Average Maximum Watts (100% CPU Utilization): 3.76
 - Average CPU Utilization for hyperscale data centers: 50%
 - HDD Storage Watt Hours / Terabyte: 0.65
 - SSD Storage Watt Hours / Terabyte: 1.2

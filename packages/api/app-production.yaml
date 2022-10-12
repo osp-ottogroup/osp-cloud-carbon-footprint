@@ -4,11 +4,8 @@ runtime: nodejs16
 instance_class: B4_1G
 basic_scaling:
   max_instances: 10
-  idle_timeout: 40m
+  idle_timeout: 30m
 
 entrypoint: npm run start:webprod
-
-env_variables:
-  CCF_CACHE_PATH: estimates.cache.json
 
 service_account: ccf-app-prod@ogcs-btqm-osphub.iam.gserviceaccount.com

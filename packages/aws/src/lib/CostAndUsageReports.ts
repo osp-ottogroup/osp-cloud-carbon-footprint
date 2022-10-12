@@ -24,6 +24,7 @@ import {
   Logger,
   wait,
   GroupBy,
+  AWSAccount,
 } from '@cloud-carbon-footprint/common'
 
 import {
@@ -93,33 +94,46 @@ export default class CostAndUsageReports {
     this.queryResultsLocation = configLoader().AWS.ATHENA_QUERY_RESULT_LOCATION
     this.costAndUsageReportsLogger = new Logger('CostAndUsageReports')
   }
+
   async getEstimates(
     start: Date,
     end: Date,
     grouping: GroupBy,
   ): Promise<EstimationResult[]> {
-    const usageRows = await this.getUsage(start, end, grouping)
-    const usageRowsHeader: Row = usageRows.shift()
+    const awsConfig = configLoader().AWS
+    const tagNames = awsConfig.RESOURCE_TAG_NAMES
+    const usageRows = await this.getUsage(start, end, grouping, tagNames)
+
+    usageRows.shift()
 
     const results: MutableEstimationResult[] = []
     const unknownRows: CostAndUsageReportsRow[] = []
     this.costAndUsageReportsLogger.info('Mapping over Usage Rows')
+
+    const accounts = Object.fromEntries(
+      awsConfig.accounts.map((account) => [account.id, account]),
+    )
+
     usageRows.map((rowData: Row) => {
-      const costAndUsageReportRow = new CostAndUsageReportsRow(
-        usageRowsHeader,
-        rowData.Data,
-      )
+      const costAndUsageReportRow =
+        this.convertAthenaRowToCostAndUsageReportsRow(
+          rowData.Data,
+          tagNames,
+          accounts,
+        )
 
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         costAndUsageReportRow,
         unknownRows,
       )
+
       if (footprintEstimate)
         appendOrAccumulateEstimatesByDay(
           results,
           costAndUsageReportRow,
           footprintEstimate,
           grouping,
+          tagNames,
         )
     })
 
@@ -132,6 +146,7 @@ export default class CostAndUsageReports {
             rowData,
             footprintEstimate,
             grouping,
+            tagNames,
           )
       })
     }
@@ -145,33 +160,18 @@ export default class CostAndUsageReports {
     const unknownRows: CostAndUsageReportsRow[] = []
 
     inputData.map((inputDataRow: LookupTableInput) => {
-      const usageRowsHeader = {
-        Data: [
-          { VarCharValue: 'timestamp' },
-          { VarCharValue: 'accountName' },
-          { VarCharValue: 'serviceName' },
-          { VarCharValue: 'region' },
-          { VarCharValue: 'usageType' },
-          { VarCharValue: 'usageUnit' },
-          { VarCharValue: 'vCpus' },
-          { VarCharValue: 'cost' },
-          { VarCharValue: 'usageAmount' },
-        ],
-      }
-      const usageRowData = [
-        { VarCharValue: '' },
-        { VarCharValue: '' },
-        { VarCharValue: inputDataRow.serviceName },
-        { VarCharValue: inputDataRow.region },
-        { VarCharValue: inputDataRow.usageType },
-        { VarCharValue: inputDataRow.usageUnit },
-        { VarCharValue: inputDataRow.vCpus },
-        { VarCharValue: '1' },
-        { VarCharValue: '1' },
-      ]
       const costAndUsageReportRow = new CostAndUsageReportsRow(
-        usageRowsHeader,
-        usageRowData,
+        null,
+        '',
+        '',
+        inputDataRow.region,
+        inputDataRow.serviceName,
+        inputDataRow.usageType,
+        inputDataRow.usageUnit,
+        inputDataRow.vCpus != '' ? parseFloat(inputDataRow.vCpus) : null,
+        1,
+        1,
+        {},
       )
 
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
@@ -318,6 +318,7 @@ export default class CostAndUsageReports {
         )
       case KNOWN_USAGE_UNITS.SECONDS_1:
       case KNOWN_USAGE_UNITS.SECONDS_2:
+      case KNOWN_USAGE_UNITS.LAMBDA_SECONDS:
         // Lambda
         costAndUsageReportRow.vCpuHours =
           costAndUsageReportRow.usageAmount / 3600
@@ -523,34 +524,67 @@ export default class CostAndUsageReports {
     )
   }
 
+  // A note about resource tags:
+  //
+  // AWS' Cost and Usage Reporting (CUR) translates tags' names to names that are valid Athena column names.
+  //
+  // On top of this, it also adds a prefix to distinguish between user-created tags and AWS-internal tags.
+  //
+  // This isn't documented anywhere, but the behaviour appears to be that a tag such as 'SourceRepository' will
+  // be 'user:SourceRepository' in CUR, and 'resource_tags_user_source_repository' in Athena. (AWS-internal tags
+  // will be prefixed with 'aws:' instead of 'user:' in CUR.)
   private async getUsage(
     start: Date,
     end: Date,
     grouping: GroupBy,
+    tagNames: string[],
   ): Promise<Athena.Row[]> {
+    const dateGranularity = AWS_QUERY_GROUP_BY[grouping]
+    const dateExpression = `DATE(DATE_TRUNC('${dateGranularity}', line_item_usage_start_date))`
+    const lineItemTypes = LINE_ITEM_TYPES.join(`', '`)
+    const startDate = new Date(
+      moment.utc(start).startOf('day') as unknown as Date,
+    )
+    const endDate = new Date(moment.utc(end).endOf('day') as unknown as Date)
+
+    const tagColumnNames = tagNames.map(tagNameToAthenaColumn)
+
+    const tagSelectionExpression = tagColumnNames
+      .map((column) => `, ${column} as ${column}`)
+      .join('\n')
+
+    // Note that these names cannot be the column alias (AS <alias>) and must instead match the original expression (before the AS).
+    // (Athena will reject the query if the alias is used.)
+    const groupByColumnNames = [
+      dateExpression,
+      'line_item_usage_account_id',
+      'product_region',
+      'line_item_product_code',
+      'line_item_usage_type',
+      'pricing_unit',
+      'product_vcpu',
+      ...tagColumnNames,
+    ].join(', ')
+
     const params = {
-      QueryString: `SELECT DATE(DATE_TRUNC('${
-        AWS_QUERY_GROUP_BY[grouping]
-      }', line_item_usage_start_date)) AS timestamp,
+      QueryString: `SELECT ${dateExpression} AS timestamp,
                         line_item_usage_account_id as accountName,
                         product_region as region,
                         line_item_product_code as serviceName,
                         line_item_usage_type as usageType,
                         pricing_unit as usageUnit,
                         product_vcpu as vCpus,
-                    SUM(line_item_usage_amount) as usageAmount,
-                    SUM(line_item_blended_cost) as cost
+                        SUM(line_item_usage_amount) as usageAmount,
+                        SUM(line_item_blended_cost) as cost
+                        ${tagSelectionExpression}
                     FROM ${this.tableName}
-                    WHERE line_item_line_item_type IN ('${LINE_ITEM_TYPES.join(
-                      `', '`,
-                    )}')
-                    AND line_item_usage_start_date BETWEEN DATE('${moment
-                      .utc(start)
-                      .format('YYYY-MM-DD')}') AND DATE('${moment
-        .utc(end)
-        .format('YYYY-MM-DD')}')
-                    GROUP BY 
-                        1,2,3,4,5,6,7`,
+                    WHERE line_item_line_item_type IN ('${lineItemTypes}')
+                      AND line_item_usage_start_date BETWEEN from_iso8601_timestamp('${moment
+                        .utc(startDate)
+                        .toISOString()}') AND from_iso8601_timestamp('${moment
+        .utc(endDate)
+        .toISOString()}')
+                    GROUP BY ${groupByColumnNames}`,
       QueryExecutionContext: {
         Database: this.dataBaseName,
       },
@@ -561,6 +595,7 @@ export default class CostAndUsageReports {
         OutputLocation: this.queryResultsLocation,
       },
     }
+
     const response = await this.startQuery(params)
 
     const queryExecutionInput: GetQueryExecutionInput = {
@@ -676,4 +711,76 @@ export default class CostAndUsageReports {
       largestInstancevCpu,
     }
   }
+
+  private convertAthenaRowToCostAndUsageReportsRow(
+    rowData: Athena.datumList,
+    tagNames: string[],
+    accounts: AWSAccountMap,
+  ): CostAndUsageReportsRow {
+    const timestamp = new Date(rowData[0].VarCharValue)
+    const accountId = rowData[1].VarCharValue
+    const accountName = accounts[accountId]?.name || accountId
+    const region = rowData[2].VarCharValue
+    const serviceName = rowData[3].VarCharValue
+    const usageType = rowData[4].VarCharValue
+    const usageUnit = rowData[5].VarCharValue
+
+    const vCpus =
+      rowData[6].VarCharValue != '' ? parseFloat(rowData[6].VarCharValue) : null
+
+    const usageAmount = parseFloat(rowData[7].VarCharValue)
+    const cost = parseFloat(rowData[8].VarCharValue)
+
+    const tags = Object.fromEntries(
+      tagNames.map((name, i) => [name, rowData[i + 9].VarCharValue]),
+    )
+
+    return new CostAndUsageReportsRow(
+      timestamp,
+      accountId,
+      accountName,
+      region,
+      serviceName,
+      usageType,
+      usageUnit,
+      vCpus,
+      usageAmount,
+      cost,
+      tags,
+    )
+  }
+}
+
+interface AWSAccountMap {
+  [index: string]: AWSAccount
+}
+
+export const tagNameToAthenaColumn = (tagName: string): string => {
+  let columnName = 'resource_tags_'
+
+  for (const char of tagName) {
+    if (char == ':') {
+      columnName = columnName + '_'
+    } else {
+      if (isUpperCase(char) && !lastCharacterIs(columnName, '_')) {
+        columnName = columnName + '_'
+      }
+
+      columnName = columnName + char.toLowerCase()
+    }
+  }
+
+  return columnName
+}
+
+const isUpperCase = (text: string): boolean => {
+  return text.toUpperCase() === text
+}
+
+const lastCharacterIs = (text: string, char: string): boolean => {
+  if (text.length === 0) {
+    return false
+  }
+
+  return text[text.length - 1] === char
 }

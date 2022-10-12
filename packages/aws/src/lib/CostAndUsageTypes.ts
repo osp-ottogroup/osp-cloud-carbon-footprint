@@ -166,6 +166,7 @@ export const UNKNOWN_USAGE_TYPES: string[] = [
   'SharedMsftAD-Usage',
   'Kafka.mcu.general',
   'SnapshotArchiveStorage',
+  'PaidPrivateCA',
 ]
 
 export const UNSUPPORTED_USAGE_TYPES: string[] = [
@@ -199,6 +200,7 @@ export enum KNOWN_USAGE_UNITS {
   GB_2 = 'GigaBytes',
   SECONDS_1 = 'seconds',
   SECONDS_2 = 'Second',
+  LAMBDA_SECONDS = 'Lambda-GB-Second',
 }
 
 export const AWS_QUERY_GROUP_BY: QUERY_DATE_TYPES = {

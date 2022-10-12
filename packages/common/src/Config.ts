@@ -20,10 +20,8 @@ export interface CCFConfig {
     COMPUTE_OPTIMIZER_BUCKET?: string
     CURRENT_SERVICES?: { key: string; name: string }[]
     CURRENT_REGIONS?: string[]
-    accounts?: {
-      id: string
-      name?: string
-    }[]
+    RESOURCE_TAG_NAMES?: string[]
+    accounts?: AWSAccount[]
     authentication?: {
       mode: string
       options?: Record<string, string>
@@ -56,7 +54,6 @@ export interface CCFConfig {
     }
   }
   LOGGING_MODE?: string
-  GROUP_QUERY_RESULTS_BY?: GroupBy
   CACHE_MODE?: string
   ON_PREMISE?: {
     SERVER?: {
@@ -72,7 +69,15 @@ export interface CCFConfig {
       AVERAGE_WATTS?: number
     }
   }
-  MONGO_URI?: string
+  MONGODB?: {
+    URI?: string
+    CREDENTIALS?: string
+  }
+}
+
+export interface AWSAccount {
+  id: string
+  name?: string
 }
 
 export enum GroupBy {
@@ -89,6 +94,12 @@ export type QUERY_DATE_TYPES = {
 
 const getAWSAccounts = () => {
   return process.env.AWS_ACCOUNTS ? process.env.AWS_ACCOUNTS : '[]'
+}
+
+const getAWSResourceTagNames = () => {
+  return process.env.AWS_RESOURCE_TAG_NAMES
+    ? process.env.AWS_RESOURCE_TAG_NAMES
+    : '[]'
 }
 
 const getGCPProjects = () => {
@@ -131,6 +142,7 @@ const getConfig = (): CCFConfig => ({
         getEnvVar('AWS_RECOMMENDATIONS_SERVICE') as AWS_RECOMMENDATIONS_SERVICES
       ],
     COMPUTE_OPTIMIZER_BUCKET: getEnvVar('AWS_COMPUTE_OPTIMIZER_BUCKET') || '',
+    RESOURCE_TAG_NAMES: JSON.parse(getAWSResourceTagNames()),
     CURRENT_REGIONS: [
       'us-east-1',
       'us-east-2',
@@ -216,10 +228,6 @@ const getConfig = (): CCFConfig => ({
     },
   },
   LOGGING_MODE: process.env.LOGGING_MODE || '',
-  GROUP_QUERY_RESULTS_BY:
-    GroupBy[
-      (process.env.GROUP_QUERY_RESULTS_BY || 'day') as keyof typeof GroupBy
-    ],
   CACHE_MODE: getEnvVar('CACHE_MODE') || '',
   ON_PREMISE: {
     SERVER: {
@@ -241,7 +249,10 @@ const getConfig = (): CCFConfig => ({
       AVERAGE_WATTS: parseFloat(getEnvVar('ON_PREMISE_AVG_WATTS_DESKTOP')),
     },
   },
-  MONGO_URI: getEnvVar('MONGO_URI') || '',
+  MONGODB: {
+    URI: getEnvVar('MONGODB_URI') || '',
+    CREDENTIALS: getEnvVar('MONGODB_CREDENTIALS') || '',
+  },
 })
 
 export default getConfig

@@ -28,9 +28,12 @@ import {
   UnknownEstimator,
   EmbodiedEmissionsEstimator,
 } from '@cloud-carbon-footprint/core'
-import CostAndUsageReports from '../lib/CostAndUsageReports'
+import CostAndUsageReports, {
+  tagNameToAthenaColumn,
+} from '../lib/CostAndUsageReports'
 import { ServiceWrapper } from '../lib/ServiceWrapper'
 import {
+  testAccountId,
   athenaMockGetQueryResultsWithEC2EBSLambda,
   athenaMockGetQueryResultsWithNetworkingGlueECSDynamoDB,
   athenaMockGetQueryResultsWithS3CloudWatchRDS,
@@ -49,9 +52,13 @@ import {
   athenaMockGetQueryResultsWithNoUsageAmount,
   athenaMockGetQueryResultsWithUnknownInstanceType,
   athenaMockGetQueryResultsWithGPUInstances,
+  athenaMockGetQueryResultsWithX86AndARMLambdas,
+  athenaMockGetQueryResultsWithTaggedResources,
 } from './fixtures/athena.fixtures'
 import { AWS_CLOUD_CONSTANTS } from '../domain'
 import {} from '../lib/CostAndUsageTypes'
+
+const testAccountName = 'the-test-account'
 
 jest.mock('@cloud-carbon-footprint/common', () => ({
   ...(jest.requireActual('@cloud-carbon-footprint/common') as Record<
@@ -65,6 +72,13 @@ jest.mock('@cloud-carbon-footprint/common', () => ({
         ATHENA_DB_TABLE: 'test-table',
         ATHENA_QUERY_RESULT_LOCATION: 'test-location',
         ATHENA_REGION: 'test-region',
+        RESOURCE_TAG_NAMES: ['user:Environment', 'aws:CreatedBy'],
+        accounts: [
+          {
+            id: testAccountId,
+            name: testAccountName,
+          },
+        ],
       },
     }
   }),
@@ -74,8 +88,6 @@ describe('CostAndUsageReports Service', () => {
   const startDate = new Date('2020-10-01')
   const endDate = new Date('2020-11-03')
   const grouping = GroupBy.day
-  const testAccountId = '123456789'
-  const testAccountName = '123456789'
   const startQueryExecutionResponse = { QueryExecutionId: 'some-execution-id' }
   const getQueryExecutionResponse = {
     QueryExecution: { Status: { State: 'SUCCEEDED' } },
@@ -176,6 +188,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 3,
             region: 'us-east-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             kilowattHours: 0.026714859604492512,
@@ -187,6 +203,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 3,
             region: 'us-east-2',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -206,6 +226,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 4,
             region: 'us-east-2',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -225,6 +249,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 5,
             region: 'us-east-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -244,6 +272,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 6,
             region: 'us-west-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             kilowattHours: 0.00001336777777777778,
@@ -255,6 +287,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AWSLambda',
             cost: 15,
             region: 'us-west-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -299,12 +335,16 @@ describe('CostAndUsageReports Service', () => {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 1.2970051334377785e-18,
+            co2e: 2.594010266875557e-18,
             cost: 9,
             region: 'us-west-1',
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
-            kilowattHours: 4.025878297397867e-15,
+            kilowattHours: 8.051756594795733e-15,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -316,6 +356,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonCloudWatch',
             usesAverageCPUConstant: false,
             kilowattHours: 2.6839188649319113e-15,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -327,6 +371,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.0027444300000000004,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -338,6 +386,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.005066640000000001,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -349,6 +401,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: true,
             kilowattHours: 0.03376132322432609,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -398,17 +454,25 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AWSGlue',
             cost: 5,
             region: 'us-east-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.000004056674208111697,
+            co2e: 0,
             cost: 10,
-            kilowattHours: 0.010701677552402589,
+            kilowattHours: 0,
             region: 'us-east-1',
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -428,6 +492,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDynamoDB',
             cost: 13,
             region: 'us-west-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -477,6 +545,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonKinesisAnalytics',
             cost: 912,
             region: 'us-east-2',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             kilowattHours: 0.037493135999999996,
@@ -488,6 +560,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonES',
             cost: 73,
             region: 'us-west-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -507,10 +583,14 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             cost: 10,
             region: 'us-east-1',
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.0000021890779867200004,
             cost: 14,
@@ -518,6 +598,10 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-1',
             serviceName: 'AmazonES',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -569,6 +653,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonECS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000014981999999999998,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -580,6 +668,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonECS',
             usesAverageCPUConstant: true,
             kilowattHours: 0.012031000000000002,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -591,10 +683,14 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonMSK',
             usesAverageCPUConstant: true,
             kilowattHours: 0.06905092093815457,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.00005058906244549772,
             cost: 4,
@@ -602,10 +698,14 @@ describe('CostAndUsageReports Service', () => {
             region: 'ap-south-1',
             serviceName: 'AmazonMSK',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.000009827074180887886,
             cost: 2,
@@ -613,28 +713,40 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-west-1',
             serviceName: 'AmazonEKS',
             usesAverageCPUConstant: false,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.00001638006587014448,
+            co2e: 0,
             cost: 4,
-            kilowattHours: 0.05084340069015286,
+            kilowattHours: 0,
             region: 'us-west-1',
             serviceName: 'AmazonRoute53',
             usesAverageCPUConstant: false,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.00001638006587014448,
+            co2e: 0,
             cost: 4,
-            kilowattHours: 0.05084340069015286,
+            kilowattHours: 0,
             region: 'us-west-1',
             serviceName: '8icvdraalzbfrdevgamoddblf', // change because of embodied e
             usesAverageCPUConstant: false,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -686,6 +798,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDocDB',
             usesAverageCPUConstant: true,
             kilowattHours: 0.7607035424102532,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -697,6 +813,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.10657145330059178,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -708,6 +828,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 1.7724144799017756,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -719,6 +843,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonSimpleDB',
             usesAverageCPUConstant: true,
             kilowattHours: 0.0048124000000000005,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -730,6 +858,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'ElasticMapReduce',
             usesAverageCPUConstant: true,
             kilowattHours: 0.10945715186127536,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -741,6 +873,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.016843399999999998,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -792,6 +928,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRedshift',
             usesAverageCPUConstant: false,
             kilowattHours: 0.005066640000000001,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -803,6 +943,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRedshift',
             usesAverageCPUConstant: true,
             kilowattHours: 0.00010455525793820347,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -814,6 +958,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 3.0426203211844607,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -825,6 +973,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: true,
             kilowattHours: 0.1154976,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -876,6 +1028,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.026714859604492512,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -895,6 +1051,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'ElasticMapReduce',
             usesAverageCPUConstant: true,
             kilowattHours: 0.10945715186127536,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -914,6 +1074,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.33106708843226795,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -933,6 +1097,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 3.0426203211844607,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -983,10 +1151,14 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 1.7864900000000001,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.00030781953536818184,
             cost: 10,
@@ -994,6 +1166,10 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-1',
             serviceName: 'AmazonCloudWatch',
             usesAverageCPUConstant: false,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1042,6 +1218,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.6467023123425776,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1053,6 +1233,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 0.28091908460355086,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1101,6 +1285,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000013921034560789199,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1120,6 +1308,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000012878153246556,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1133,12 +1325,16 @@ describe('CostAndUsageReports Service', () => {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 2.1868968330067223e-12,
+            co2e: 4.3737936660134446e-12,
             cost: 7,
             region: 'eu-north-1',
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
-            kilowattHours: 2.4851100375076387e-7,
+            kilowattHours: 4.970220075015277e-7,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1152,12 +1348,16 @@ describe('CostAndUsageReports Service', () => {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 4.0164368025232615e-8,
+            co2e: 8.032873605046523e-8,
             cost: 10,
             region: 'us-east-1',
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
-            kilowattHours: 0.00010595529580428001,
+            kilowattHours: 0.00021191059160856002,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1177,6 +1377,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
             kilowattHours: 6.250303140268443e-7,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1196,6 +1400,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
             kilowattHours: 0.0000011762860016401646,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1246,6 +1454,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 0.048499974655632,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1257,6 +1469,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 0.039406229407701006,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1268,6 +1484,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEFS',
             usesAverageCPUConstant: false,
             kilowattHours: 1.9489146523119416e-17,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1279,6 +1499,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000027338639343667196,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1290,6 +1514,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000007404214822243199,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1301,6 +1529,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: false,
             kilowattHours: 0.0506664,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1312,6 +1544,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonRDS',
             usesAverageCPUConstant: true,
             kilowattHours: 4943.5097095398905,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1362,6 +1598,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDocDB',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000010307734548479999,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1373,6 +1613,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDocDB',
             usesAverageCPUConstant: false,
             kilowattHours: 0.000008375034320639999,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1384,6 +1628,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDocDB',
             usesAverageCPUConstant: true,
             kilowattHours: 0.05035265836613979,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1395,6 +1643,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonDynamoDB',
             usesAverageCPUConstant: false,
             kilowattHours: 3.5426738031674176e-20,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1406,6 +1658,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonECR',
             usesAverageCPUConstant: false,
             kilowattHours: 2.4851100375076387e-7,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1417,6 +1673,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonSimpleDB',
             usesAverageCPUConstant: false,
             kilowattHours: 3.05859696924017e-7,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1465,6 +1725,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 3.0426203211844607,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1476,6 +1740,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 57.968118111066396,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1489,23 +1757,31 @@ describe('CostAndUsageReports Service', () => {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 1.6530578359379434e-18,
+            co2e: 3.3061156718758868e-18,
             cost: 500,
             region: 'us-east-2',
             serviceName: 'AmazonS3',
             usesAverageCPUConstant: false,
-            kilowattHours: 4.025878297397867e-15,
+            kilowattHours: 8.051756594795733e-15,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.0006472920557434965,
+            co2e: 0,
             cost: 600,
             region: 'us-east-2',
             serviceName: 'AmazonCloudWatch',
             usesAverageCPUConstant: false,
-            kilowattHours: 1.576423391028661,
+            kilowattHours: 0,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1525,6 +1801,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 1.7864900000000001,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1536,6 +1816,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: false,
             kilowattHours: 61.48492228020051,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1586,6 +1870,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
             kilowattHours: 49.38658274488162,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1597,6 +1885,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonFSx',
             usesAverageCPUConstant: false,
             kilowattHours: 0.2026656,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1608,6 +1900,10 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AmazonKinesis',
             usesAverageCPUConstant: false,
             kilowattHours: 2.4774635676294563e-13,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
@@ -1619,39 +1915,55 @@ describe('CostAndUsageReports Service', () => {
             serviceName: 'AWSBackup',
             usesAverageCPUConstant: false,
             kilowattHours: 2.6839188649319115e-13,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.00013284196720080927,
+            co2e: 0,
             cost: 10,
             region: 'eu-west-1',
             serviceName: 'AmazonApiGateway',
             usesAverageCPUConstant: false,
-            kilowattHours: 0.4768196956238667,
+            kilowattHours: 0,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.00013284196720080927,
+            co2e: 0,
             cost: 10,
             region: 'eu-west-1',
             serviceName: 'AWSDirectConnect',
             usesAverageCPUConstant: false,
-            kilowattHours: 0.4768196956238667,
+            kilowattHours: 0,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
             accountId: testAccountId,
             accountName: testAccountName,
             cloudProvider: 'AWS',
-            co2e: 0.00013284196720080927,
+            co2e: 0,
             cost: 10,
             region: 'eu-west-1',
             serviceName: 'AWSDirectoryService',
             usesAverageCPUConstant: false,
-            kilowattHours: 0.4768196956238667,
+            kilowattHours: 0,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1692,8 +2004,8 @@ describe('CostAndUsageReports Service', () => {
         timestamp: new Date('2020-10-30'),
         serviceEstimates: [
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.000011733898965323593,
             cost: 5,
@@ -1701,6 +2013,10 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-2',
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1741,8 +2057,8 @@ describe('CostAndUsageReports Service', () => {
         timestamp: new Date('2022-01-01'),
         serviceEstimates: [
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.01932281153902049,
             cost: 10,
@@ -1750,10 +2066,14 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-1',
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0.054792520029449,
             cost: 10,
@@ -1761,6 +2081,184 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-2',
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
+          },
+        ],
+        groupBy: grouping,
+        periodEndDate: new Date('2022-01-01T23:59:59.000Z'),
+        periodStartDate: new Date('2022-01-01T00:00:00.000Z'),
+      },
+    ]
+
+    expect(result).toEqual(expectedResult)
+  })
+
+  it('returns estimates for both x86 and ARM Lambdas', async () => {
+    mockStartQueryExecution(startQueryExecutionResponse)
+    mockGetQueryExecution(getQueryExecutionResponse)
+    mockGetQueryResults(athenaMockGetQueryResultsWithX86AndARMLambdas)
+
+    const athenaService = new CostAndUsageReports(
+      new ComputeEstimator(),
+      new StorageEstimator(AWS_CLOUD_CONSTANTS.SSDCOEFFICIENT),
+      new StorageEstimator(AWS_CLOUD_CONSTANTS.HDDCOEFFICIENT),
+      new NetworkingEstimator(AWS_CLOUD_CONSTANTS.NETWORKING_COEFFICIENT),
+      new MemoryEstimator(AWS_CLOUD_CONSTANTS.MEMORY_COEFFICIENT),
+      new UnknownEstimator(AWS_CLOUD_CONSTANTS.ESTIMATE_UNKNOWN_USAGE_BY),
+      new EmbodiedEmissionsEstimator(
+        AWS_CLOUD_CONSTANTS.SERVER_EXPECTED_LIFESPAN,
+      ),
+      getServiceWrapper(),
+    )
+
+    const result = await athenaService.getEstimates(
+      startDate,
+      endDate,
+      grouping,
+    )
+
+    const expectedResult: EstimationResult[] = [
+      {
+        timestamp: new Date('2022-01-01'),
+        serviceEstimates: [
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.0000000012668275386111113,
+            cost: 8,
+            kilowattHours: 0.000003341944444444445,
+            region: 'us-east-1',
+            serviceName: 'AWSLambda',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
+          },
+        ],
+        groupBy: grouping,
+        periodStartDate: new Date('2022-01-01T00:00:00.000Z'),
+        periodEndDate: new Date('2022-01-01T23:59:59.000Z'),
+      },
+      {
+        timestamp: new Date('2022-01-02'),
+        serviceEstimates: [
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.0000000009035109614999999,
+            cost: 9,
+            kilowattHours: 0.0000023834999999999997,
+            region: 'us-east-1',
+            serviceName: 'AWSLambda',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
+          },
+        ],
+        groupBy: grouping,
+        periodStartDate: new Date('2022-01-02T00:00:00.000Z'),
+        periodEndDate: new Date('2022-01-02T23:59:59.000Z'),
+      },
+    ]
+
+    expect(result).toEqual(expectedResult)
+  })
+
+  it('returns estimates for instances with tags', async () => {
+    mockStartQueryExecution(startQueryExecutionResponse)
+    mockGetQueryExecution(getQueryExecutionResponse)
+    mockGetQueryResults(athenaMockGetQueryResultsWithTaggedResources)
+
+    const athenaService = new CostAndUsageReports(
+      new ComputeEstimator(),
+      new StorageEstimator(AWS_CLOUD_CONSTANTS.SSDCOEFFICIENT),
+      new StorageEstimator(AWS_CLOUD_CONSTANTS.HDDCOEFFICIENT),
+      new NetworkingEstimator(AWS_CLOUD_CONSTANTS.NETWORKING_COEFFICIENT),
+      new MemoryEstimator(AWS_CLOUD_CONSTANTS.MEMORY_COEFFICIENT),
+      new UnknownEstimator(AWS_CLOUD_CONSTANTS.ESTIMATE_UNKNOWN_USAGE_BY),
+      new EmbodiedEmissionsEstimator(
+        AWS_CLOUD_CONSTANTS.SERVER_EXPECTED_LIFESPAN,
+      ),
+      getServiceWrapper(),
+    )
+
+    const result = await athenaService.getEstimates(
+      startDate,
+      endDate,
+      grouping,
+    )
+
+    const expectedResult: EstimationResult[] = [
+      {
+        timestamp: new Date('2022-01-01'),
+        serviceEstimates: [
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.03864562307804098,
+            cost: 20,
+            kilowattHours: 101.94878261752076,
+            region: 'us-east-1',
+            serviceName: 'AmazonEC2',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': 'prod',
+              'aws:CreatedBy': 'user-1',
+            },
+          },
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.00805117147459187,
+            cost: 4.2,
+            kilowattHours: 21.23932971198349,
+            region: 'us-east-1',
+            serviceName: 'AmazonEC2',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': 'test',
+              'aws:CreatedBy': 'user-1',
+            },
+          },
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.0008051171474591871,
+            cost: 0.42,
+            kilowattHours: 2.1239329711983492,
+            region: 'us-east-1',
+            serviceName: 'AmazonEC2',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': 'prod',
+              'aws:CreatedBy': 'user-2',
+            },
+          },
+          {
+            accountId: testAccountId,
+            accountName: testAccountName,
+            cloudProvider: 'AWS',
+            co2e: 0.0016102342949183741,
+            cost: 0.82,
+            kilowattHours: 4.2478659423966985,
+            region: 'us-east-1',
+            serviceName: 'AmazonEC2',
+            usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': 'staging',
+              'aws:CreatedBy': 'user-3',
+            },
           },
         ],
         groupBy: grouping,
@@ -1884,8 +2382,8 @@ describe('CostAndUsageReports Service', () => {
         timestamp: new Date('2020-10-30'),
         serviceEstimates: [
           {
-            accountId: '123456789',
-            accountName: '123456789',
+            accountId: testAccountId,
+            accountName: testAccountName,
             cloudProvider: 'AWS',
             co2e: 0,
             cost: 5,
@@ -1893,6 +2391,10 @@ describe('CostAndUsageReports Service', () => {
             region: 'us-east-2',
             serviceName: 'AmazonEC2',
             usesAverageCPUConstant: true,
+            tags: {
+              'user:Environment': '',
+              'aws:CreatedBy': '',
+            },
           },
         ],
         groupBy: grouping,
@@ -1926,4 +2428,29 @@ describe('CostAndUsageReports Service', () => {
     getQueryResultsSpy.mockResolvedValue(results)
     AWSMock.mock('Athena', 'getQueryResults', getQueryResultsSpy)
   }
+})
+
+describe('converting tag names to Athena column names', () => {
+  it('replaces colons with underscores', () => {
+    expect(tagNameToAthenaColumn('aws:user')).toEqual('resource_tags_aws_user')
+  })
+
+  it('replaces uppercase characters with their lowercase equivalents', () => {
+    expect(tagNameToAthenaColumn('user:Environment')).toEqual(
+      'resource_tags_user_environment',
+    )
+  })
+
+  // This behaviour isn't documented anywhere I can find, but it's what AWS appears to do...
+  it('prefixes uppercase characters in the tag name with an underscore', () => {
+    expect(tagNameToAthenaColumn('user:CreatedBy')).toEqual(
+      'resource_tags_user_created_by',
+    )
+  })
+
+  it('correctly handles tag names that start with an uppercase character', () => {
+    expect(tagNameToAthenaColumn('User:CreatedBy')).toEqual(
+      'resource_tags_user_created_by',
+    )
+  })
 })
