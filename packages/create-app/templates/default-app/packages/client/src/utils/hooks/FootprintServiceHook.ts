@@ -25,6 +25,80 @@ export interface UseRemoteFootprintServiceParams {
   limit?: number
 }
 
+const useRemoteFootprintService = (
+  params: UseRemoteFootprintServiceParams,
+): ServiceResult<EstimationResult> => {
+  const [data, setData] = useState(params.initial ?? [])
+  const [loading, setLoading] = useState(false)
+
+  const { error, setError } = useAxiosErrorHandling(params.onApiError)
+
+  const start: string = params.startDate.format('YYYY-MM-DD').toString()
+  const end: string = params.endDate.format('YYYY-MM-DD').toString()
+
+  useEffect(() => {
+    const fetchEstimates = async () => {
+      if (!params.baseUrl) {
+        return
+      }
+      setError(null)
+      setLoading(true)
+
+      /*
+       * Estimates needs to be initialized to spread data and not data itself to avoid state mutation during concatenation
+       * This allows setState to properly set off useEffect dependencies in the filter hooks
+       */
+      let estimates: EstimationResult[] = [...data]
+      try {
+        let lastDataLength = 1
+        let skip = 0
+        while (lastDataLength > 0) {
+          const res = await axios.get(`${params.baseUrl}/footprint`, {
+            params: {
+              start: start,
+              end: end,
+              region: params.region,
+              ignoreCache: params.ignoreCache,
+              groupBy: params.groupBy,
+              limit: params.limit,
+              skip,
+            },
+          })
+          lastDataLength = checkForLoopExit(
+            lastDataLength,
+            res?.data,
+            params,
+            estimates,
+          )
+          estimates = concatenateResults(estimates, res?.data)
+          skip += params.limit
+        }
+      } catch (e) {
+        console.error(e.message, e)
+        setError(e)
+      } finally {
+        setData(estimates)
+        setTimeout(() => {
+          setLoading(false)
+        }, params.minLoadTimeMs ?? 1000)
+      }
+    }
+
+    fetchEstimates()
+  }, [
+    end,
+    start,
+    params.region,
+    params.ignoreCache,
+    setError,
+    params.baseUrl,
+    params.groupBy,
+    params.limit,
+  ])
+
+  return { data, loading, error }
+}
+
 const concatenateResults = (estimates, newEstimates) => {
   const equalsLastDataObject = checkForEqualObjects(newEstimates, estimates)
   if (estimates.length == 0 && equalsLastDataObject) {
@@ -40,29 +114,29 @@ const concatenateResults = (estimates, newEstimates) => {
     return dates
   }, [])
 
-  let updatedEstimates
-  newEstimates.map((newEstimate) => {
-    const newDateExists = !!existingDates.find((date) => {
-      return (
-        new Date(date).getTime() == new Date(newEstimate.timestamp).getTime()
-      )
-    })
+  const updatedEstimates = estimates
+  newEstimates.forEach((newEstimate) => {
+    const newDateExists = existingDates.some(
+      (date) =>
+        new Date(date).getTime() == new Date(newEstimate.timestamp).getTime(),
+    )
 
     if (newDateExists) {
-      const elementIndex = estimates.findIndex((estimate) =>
+      const elementIndex = updatedEstimates.find((estimate) =>
         moment
           .utc(estimate.timestamp)
           .isSame(moment.utc(newEstimate.timestamp)),
       )
-      const filteredEstimate = estimates[elementIndex]
-      const concatenatedEstimates = filteredEstimate?.serviceEstimates.concat(
-        newEstimate.serviceEstimates,
-      )
-      filteredEstimate.serviceEstimates = concatenatedEstimates
-      estimates[elementIndex] = filteredEstimate
-      updatedEstimates = estimates
+      const estimateToUpdate = updatedEstimates[elementIndex]
+      if (estimateToUpdate) {
+        estimateToUpdate.serviceEstimates =
+          estimateToUpdate?.serviceEstimates.concat(
+            newEstimate.serviceEstimates,
+          )
+        updatedEstimates[elementIndex] = estimateToUpdate
+      }
     } else {
-      updatedEstimates = estimates.concat([newEstimate])
+      updatedEstimates.push(newEstimate)
     }
   })
 
@@ -74,7 +148,7 @@ const checkForEqualObjects = (
   cachedEstimates: EstimationResult[],
 ) => {
   if (!cachedEstimates || cachedEstimates?.length == 0) return false
-  if (!newEstimates || cachedEstimates?.length == 0) return true
+  if (!newEstimates || newEstimates?.length == 0) return true
 
   const newServiceEstimates =
     newEstimates[newEstimates?.length - 1]?.serviceEstimates
@@ -101,75 +175,6 @@ const checkForLoopExit = (
     lastDataLength = 0
 
   return lastDataLength
-}
-
-const useRemoteFootprintService = (
-  params: UseRemoteFootprintServiceParams,
-): ServiceResult<EstimationResult> => {
-  const [data, setData] = useState(params.initial ?? [])
-  const [loading, setLoading] = useState(false)
-
-  const { error, setError } = useAxiosErrorHandling(params.onApiError)
-
-  const start: string = params.startDate.format('YYYY-MM-DD').toString()
-  const end: string = params.endDate.format('YYYY-MM-DD').toString()
-
-  useEffect(() => {
-    const fetchEstimates = async () => {
-      if (!params.baseUrl) {
-        return
-      }
-      setError(null)
-      setLoading(true)
-
-      let estimates: EstimationResult[] = data
-      try {
-        let lastDataLength = 1
-        let skip = 0
-        while (lastDataLength > 0) {
-          const res = await axios.get(`${params.baseUrl}/footprint`, {
-            params: {
-              start: start,
-              end: end,
-              region: params.region,
-              ignoreCache: params.ignoreCache,
-              groupBy: params.groupBy,
-              limit: params.limit,
-              skip,
-            },
-          })
-          lastDataLength = checkForLoopExit(
-            lastDataLength,
-            res?.data,
-            params,
-            estimates,
-          )
-          estimates = concatenateResults(estimates, res?.data)
-          skip += params.limit
-        }
-      } catch (e) {
-        setError(e)
-      } finally {
-        setData(estimates)
-        setTimeout(() => {
-          setLoading(false)
-        }, params.minLoadTimeMs ?? 1000)
-      }
-    }
-
-    fetchEstimates()
-  }, [
-    end,
-    start,
-    params.region,
-    params.ignoreCache,
-    setError,
-    params.baseUrl,
-    params.groupBy,
-    params.limit,
-  ])
-
-  return { data, loading, error }
 }
 
 export default useRemoteFootprintService
