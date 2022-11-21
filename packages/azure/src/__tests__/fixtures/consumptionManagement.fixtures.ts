@@ -2,24 +2,35 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import {
-  LegacyUsageDetail,
-  ModernUsageDetail,
-} from '@azure/arm-consumption/esm/models'
+import { UsageDetailResult } from '../../lib/ConsumptionTypes'
 
-interface AzureUsageDetailsResponseWithNextLink
-  extends Array<Partial<LegacyUsageDetail | ModernUsageDetail>> {
-  /**
-   * @member {string} [nextLink] The link (url) to the next page of results.
-   * **NOTE: This property will not be serialized. It can only be populated by
-   * the server.**
-   */
-  nextLink?: string
+interface IterableMockResponse {
+  next(): Promise<IteratorResult<UsageDetailResult>>
+  [Symbol.asyncIterator](): IterableMockResponse
 }
 
-export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWithNextLink =
-  [
-    {
+const mockAsyncIterator = {
+  // * = fancy generator function (https://javascript.info/generators)
+  async *[Symbol.asyncIterator](mockResponse: UsageDetailResult[]) {
+    for (const response of mockResponse) yield response
+  },
+}
+
+export const mockIterableResponse = (
+  mockResponse: UsageDetailResult[],
+): IterableMockResponse => {
+  return mockAsyncIterator[Symbol.asyncIterator](mockResponse)
+}
+
+export const mockConsumptionManagementResponseOne: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 17,
       cost: 5,
@@ -28,11 +39,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '10 Hours',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.250004,
       cost: 10,
@@ -41,11 +59,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 7,
       cost: 10,
@@ -54,11 +79,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '1 Hour',
         meterCategory: 'Azure App Service',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'CentralUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 10,
       cost: 12,
@@ -67,11 +99,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '1000 Hours',
         meterCategory: 'Container Instances',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'SouthCentralUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -80,11 +119,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '100 Hours',
         meterCategory: 'Azure Database for MySQL',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'Unknown',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -93,11 +139,18 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '100 Hours',
         meterCategory: 'Virtual Machines Licenses',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'ukwest',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -106,15 +159,21 @@ export const mockConsumptionManagementResponseOne: AzureUsageDetailsResponseWith
         unitOfMeasure: '100 Hours',
         meterCategory: 'VPN Gateway',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'Unknown',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseTwo: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.031248,
       cost: 5,
@@ -123,11 +182,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.031248,
       cost: 5,
@@ -136,11 +202,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.031248,
       cost: 5,
@@ -149,11 +222,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '100 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 2,
       cost: 5,
@@ -162,11 +242,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '10 GB/Month',
         meterCategory: 'Azure Database for MySQL',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 2,
       cost: 5,
@@ -175,11 +262,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '30 /Day',
         meterCategory: 'Container Registry',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 2,
       cost: 5,
@@ -188,11 +282,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 5,
       cost: 5,
@@ -201,11 +302,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'HDInsight',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 2,
       cost: 5,
@@ -214,11 +322,18 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 TB/Month',
         meterCategory: 'Azure Synapse Analytics',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 10,
       cost: 5,
@@ -227,15 +342,21 @@ export const mockConsumptionManagementResponseTwo: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '100 GB/Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'centralindia',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseThree: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseThree: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 10,
       cost: 5,
@@ -244,11 +365,18 @@ export const mockConsumptionManagementResponseThree: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 GB',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 10,
       cost: 5,
@@ -257,11 +385,18 @@ export const mockConsumptionManagementResponseThree: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 TB',
         meterCategory: 'Bandwidth',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 5,
       cost: 5,
@@ -270,15 +405,21 @@ export const mockConsumptionManagementResponseThree: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 TB',
         meterCategory: 'Bandwidth',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseFour: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseFour: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -287,11 +428,18 @@ export const mockConsumptionManagementResponseFour: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '10 Hours',
         meterCategory: 'Azure Databricks',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'Unassigned',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -300,11 +448,18 @@ export const mockConsumptionManagementResponseFour: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '100 Hours',
         meterCategory: 'API Management',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -313,11 +468,18 @@ export const mockConsumptionManagementResponseFour: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '100 Hours',
         meterCategory: 'Virtual Machines Licenses',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 12,
       cost: 12,
@@ -326,14 +488,20 @@ export const mockConsumptionManagementResponseFour: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '1 /Month',
         meterCategory: 'Advanced Data Security',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-  ]
-export const mockConsumptionManagementResponseFive: Partial<LegacyUsageDetail>[] =
-  [
-    {
+  },
+]
+export const mockConsumptionManagementResponseFive: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 5,
       cost: 20,
@@ -342,11 +510,18 @@ export const mockConsumptionManagementResponseFive: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 48,
       cost: 5,
@@ -355,11 +530,18 @@ export const mockConsumptionManagementResponseFive: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '100 Hours',
         meterCategory: 'Redis Cache',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'apsoutheast',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.111375,
       cost: 10,
@@ -368,11 +550,18 @@ export const mockConsumptionManagementResponseFive: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '50000 GB Seconds',
         meterCategory: 'Functions',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'EastUS2',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 14.44976379,
       cost: 7,
@@ -381,15 +570,21 @@ export const mockConsumptionManagementResponseFive: Partial<LegacyUsageDetail>[]
         unitOfMeasure: '1000 GB Hours',
         meterCategory: 'Container Instances',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'ukwest',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseSix: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.002654,
       cost: 20,
@@ -398,11 +593,18 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '100 GB/Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'WestUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.012219,
       cost: 15,
@@ -411,11 +613,18 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 GB/Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'SouthCentralUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.000015,
       cost: 10,
@@ -424,11 +633,18 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '100 GB/Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.027492,
       cost: 5,
@@ -437,11 +653,18 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 GB/Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uswest2',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 0.2973480663,
       cost: 2,
@@ -450,11 +673,18 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 123456789,
       cost: 2,
@@ -463,15 +693,21 @@ export const mockConsumptionManagementResponseSix: Partial<LegacyUsageDetail>[] 
         unitOfMeasure: '1 /Month',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westindia',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseSeven: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.01344086022,
       cost: 20,
@@ -480,11 +716,18 @@ export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[
         unitOfMeasure: '10 GB/Month',
         meterCategory: 'Azure Database for MySQL',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 12,
       cost: 30,
@@ -493,11 +736,18 @@ export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[
         unitOfMeasure: '100 Hours',
         meterCategory: 'Azure Database for MySQL',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 0.02150770413,
       cost: 35,
@@ -506,11 +756,18 @@ export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[
         unitOfMeasure: '10 GB/Month',
         meterCategory: 'Azure Cosmos DB',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'CentralUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 0.006989247310827,
       cost: 40,
@@ -519,11 +776,18 @@ export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[
         unitOfMeasure: '10 GB/Month',
         meterCategory: 'SQL Database',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 2,
       cost: 45,
@@ -532,15 +796,21 @@ export const mockConsumptionManagementResponseSeven: Partial<LegacyUsageDetail>[
         unitOfMeasure: '10 Hours',
         meterCategory: 'SQL Database',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[] =
-  [
-    {
+export const mockConsumptionManagementResponseEight: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 5,
       cost: 5,
@@ -549,11 +819,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 5,
       cost: 1.579140496,
@@ -562,11 +839,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '100 Hours',
         meterCategory: 'API Management',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 0.02150770413,
       cost: 35,
@@ -575,11 +859,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '10 GB/Month',
         meterCategory: 'Azure Cosmos DB',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-03'),
       quantity: 25,
       cost: 0.4835702479,
@@ -588,11 +879,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 /Month',
         meterCategory: 'Advanced Data Security',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 10,
       cost: 5,
@@ -601,11 +899,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1 GB',
         meterCategory: 'Storage',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-04'),
       quantity: 20,
       cost: 0.006280996057,
@@ -614,11 +919,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '100 GB',
         meterCategory: 'Load Balancer',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-05'),
       quantity: 14.44976379,
       cost: 7,
@@ -627,11 +939,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '1000 GB Hours',
         meterCategory: 'Container Instances',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-05'),
       quantity: 32,
       cost: 18,
@@ -640,11 +959,18 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '50000 GB Seconds',
         meterCategory: 'Azure Databricks',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-06'),
       quantity: 20,
       cost: 0.003168316832,
@@ -653,15 +979,21 @@ export const mockConsumptionManagementResponseEight: Partial<LegacyUsageDetail>[
         unitOfMeasure: '2',
         meterCategory: 'Azure DNS',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'All Regions',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseNine: AzureUsageDetailsResponseWithNextLink =
-  [
-    {
+export const mockConsumptionManagementResponseNine: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 5,
       cost: 10,
@@ -670,11 +1002,18 @@ export const mockConsumptionManagementResponseNine: AzureUsageDetailsResponseWit
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 0.250004,
       cost: 15,
@@ -683,11 +1022,18 @@ export const mockConsumptionManagementResponseNine: AzureUsageDetailsResponseWit
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 17,
       cost: 5,
@@ -696,11 +1042,17 @@ export const mockConsumptionManagementResponseNine: AzureUsageDetailsResponseWit
         unitOfMeasure: '10 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'modern',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
       kind: 'modern',
       date: new Date('2020-11-02'),
       quantity: 17,
@@ -712,11 +1064,18 @@ export const mockConsumptionManagementResponseNine: AzureUsageDetailsResponseWit
       subscriptionName: 'test-subscription',
       resourceLocation: 'EASTUS',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseTen: AzureUsageDetailsResponseWithNextLink =
-  [
-    {
+export const mockConsumptionManagementResponseTen: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-01'),
       quantity: 5,
       cost: 10,
@@ -725,11 +1084,18 @@ export const mockConsumptionManagementResponseTen: AzureUsageDetailsResponseWith
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-07'),
       quantity: 0.250004,
       cost: 15,
@@ -738,11 +1104,18 @@ export const mockConsumptionManagementResponseTen: AzureUsageDetailsResponseWith
         unitOfMeasure: '1 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'westeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-08'),
       quantity: 17,
       cost: 5,
@@ -751,15 +1124,21 @@ export const mockConsumptionManagementResponseTen: AzureUsageDetailsResponseWith
         unitOfMeasure: '10 Hour',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'uksouth',
     },
-  ]
+  },
+]
 
-export const mockConsumptionManagementResponseEleven: AzureUsageDetailsResponseWithNextLink =
-  [
-    {
+export const mockConsumptionManagementResponseEleven: UsageDetailResult[] = [
+  {
+    id: 'test-subscription-id',
+    kind: 'legacy',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
+      kind: 'legacy',
       date: new Date('2020-11-02'),
       quantity: 1,
       cost: 10,
@@ -768,11 +1147,17 @@ export const mockConsumptionManagementResponseEleven: AzureUsageDetailsResponseW
         unitOfMeasure: '10 Hours',
         meterCategory: 'Virtual Machines',
       },
-      subscriptionId: 'test-subscription-id',
       subscriptionName: 'test-subscription',
       resourceLocation: 'northeurope',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'modern',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
       kind: 'modern',
       date: new Date('2020-11-03'),
       quantity: 1,
@@ -784,7 +1169,14 @@ export const mockConsumptionManagementResponseEleven: AzureUsageDetailsResponseW
       subscriptionName: 'test-subscription',
       resourceLocation: 'EASTUS',
     },
-    {
+  },
+  {
+    id: 'test-subscription-id',
+    kind: 'modern',
+    name: 'name',
+    type: 'type',
+    tags: '',
+    properties: {
       kind: 'modern',
       date: new Date('2020-11-03'),
       quantity: 1,
@@ -796,4 +1188,5 @@ export const mockConsumptionManagementResponseEleven: AzureUsageDetailsResponseW
       subscriptionName: 'test-subscription',
       resourceLocation: 'WESTEUROPE',
     },
-  ]
+  },
+]

@@ -5,12 +5,12 @@
 import waitOn from 'wait-on'
 import page from './page-model'
 
-fixture`Cloud Carbon Footprint`.page`http://localhost:3000/`
+fixture`Cloud Carbon Footprint`.page`http://127.0.0.1:3000/`
   .before(async () => {
     await waitOn({
       resources: [
-        'http://localhost:3000/',
-        'http://localhost:4000/api/healthz',
+        'http://127.0.0.1:3000/',
+        'http://127.0.0.1:4000/api/healthz',
       ],
     })
   })
@@ -75,6 +75,7 @@ test('carbon equivalency component displays each option when clicked', async (t)
 test('emissions breakdown component displays each bar chart when selected', async (t) => {
   // Maximize the window in orde for all DOM elements to be visible.
   // For some reason this stops this test failing, and can help with debugging.
+  // In headless mode, issues have been noted that can be resolved by resizing window: https://github.com/DevExpress/testcafe/issues/6739
   await t.maximizeWindow()
   //sort by account
   await t.click(page.dropDownSelector)
@@ -87,6 +88,7 @@ test('emissions breakdown component displays each bar chart when selected', asyn
   await t.expect(page.selected.withText('computeEngine').exists).ok() //todo: minimize dataset-specific selectors
 
   //sort by region
+  await t.maximizeWindow()
   await t.click(page.dropDownSelector)
   await t.click(page.regionSelection)
   await t.expect(page.selected.withText('us-east-1').exists).ok() //todo: minimize dataset-specific selectors
