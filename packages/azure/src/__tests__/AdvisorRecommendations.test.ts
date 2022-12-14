@@ -27,7 +27,7 @@ describe('Azure Advisor Recommendations Service', () => {
     getToken: jest.fn(),
   }
 
-  it('Get recommendations from Advisor API type: Shutdown', async () => {
+  it.skip('Get recommendations from Advisor API type: Shutdown', async () => {
     mockListRecommendations.list.mockReturnValue(
       mockShutdownVmRecommendationsResult,
     )
@@ -99,7 +99,7 @@ describe('Azure Advisor Recommendations Service', () => {
     expect(result).toEqual(expectedResult)
   })
 
-  it('Get recommendations from Advisor API type: Right-size', async () => {
+  it.skip('Get recommendations from Advisor API type: Right-size', async () => {
     mockListRecommendations.list.mockReturnValue(
       mockRightsizeVmRecommendationsResults,
     )
