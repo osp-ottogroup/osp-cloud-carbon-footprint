@@ -7,6 +7,7 @@ import {
 } from './fixtures/advisor.fixtures'
 import { AZURE_CLOUD_CONSTANTS } from '../domain'
 import AdvisorRecommendations from '../lib/AdvisorRecommendations'
+import moment from 'moment'
 
 const mockListRecommendations = { list: jest.fn() }
 
@@ -21,6 +22,9 @@ jest.mock('@azure/arm-advisor', () => {
 })
 
 describe('Azure Advisor Recommendations Service', () => {
+  moment.now = function () {
+    return +new Date('2023-02-01T00:00:00.000Z')
+  }
   const subscriptionId = 'test-subscription-id'
   const mockCredentials = {
     msalFlow: jest.fn(),
@@ -45,10 +49,10 @@ describe('Azure Advisor Recommendations Service', () => {
         accountId: subscriptionId,
         accountName: subscriptionId,
         cloudProvider: 'AZURE',
-        co2eSavings: 0.0014303862427248,
+        co2eSavings: 0.0012919617676223998,
         costSavings: 30,
         instanceName: 'test-vm-name',
-        kilowattHourSavings: 3.7734191999999998,
+        kilowattHourSavings: 3.4082495999999995,
         recommendationDetail: 'Shutdown instance: test-vm-name.',
         recommendationType: 'Shutdown',
         region: 'EastUS',
@@ -58,10 +62,10 @@ describe('Azure Advisor Recommendations Service', () => {
         accountId: subscriptionId,
         accountName: subscriptionId,
         cloudProvider: 'AZURE',
-        co2eSavings: 0.331186314674052,
+        co2eSavings: 0.2991360261572083,
         costSavings: 30,
         instanceName: null,
-        kilowattHourSavings: 942.7987672848001,
+        kilowattHourSavings: 851.5601769024001,
         recommendationDetail:
           'Shutdown instance with Resource ID: test-resource-id.',
         recommendationType: 'Shutdown',
@@ -72,10 +76,10 @@ describe('Azure Advisor Recommendations Service', () => {
         accountId: 'test-subscription-id',
         accountName: 'test-subscription-id',
         cloudProvider: 'AZURE',
-        co2eSavings: 0.06597353757199936,
+        co2eSavings: 0.05958900167793491,
         costSavings: 30,
         instanceName: 'test-vm-name',
-        kilowattHourSavings: 174.0409729416,
+        kilowattHourSavings: 157.19829814079998,
         recommendationDetail: 'Shutdown instance: test-vm-name.',
         recommendationType: 'Shutdown',
         region: 'EastUS',
@@ -85,10 +89,10 @@ describe('Azure Advisor Recommendations Service', () => {
         accountId: 'test-subscription-id',
         accountName: 'test-subscription-id',
         cloudProvider: 'AZURE',
-        co2eSavings: 0.0007151931213624,
+        co2eSavings: 0.0006459808838111999,
         costSavings: 30,
         instanceName: 'test-vm-name',
-        kilowattHourSavings: 1.8867095999999999,
+        kilowattHourSavings: 1.7041247999999998,
         recommendationDetail: 'Shutdown instance: test-vm-name.',
         recommendationType: 'Shutdown',
         region: 'EastUS',
@@ -117,10 +121,10 @@ describe('Azure Advisor Recommendations Service', () => {
         accountId: subscriptionId,
         accountName: subscriptionId,
         cloudProvider: 'AZURE',
-        co2eSavings: 0.020799503354697324,
+        co2eSavings: 0.018786648191339524,
         costSavings: 30,
         instanceName: 'test-vm-name',
-        kilowattHourSavings: 54.86996656201727,
+        kilowattHourSavings: 49.55996979795109,
         recommendationDetail:
           'Right-size instance: test-vm-name. Update instance type M16ms to M8ms',
         recommendationType: 'Right-size',

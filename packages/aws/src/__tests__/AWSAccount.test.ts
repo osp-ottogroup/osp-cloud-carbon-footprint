@@ -223,7 +223,6 @@ describe('AWSAccount', () => {
         serviceName: 'AmazonEC2',
         region: 'us-east-1',
         usageType: 'USE2-BoxUsage:t2.micro',
-        usageUnit: 'Hrs',
         vCpus: '2',
         kilowattHours: 0.014425250356994983,
         co2e: 0.000005468165227575731,
@@ -569,6 +568,8 @@ function expectAWSService(key: string) {
   setConfig({
     AWS: {
       CURRENT_SERVICES: [{ key: key, name: '' }],
+      ATHENA_REGION: 'us-east-1',
+      IS_AWS_GLOBAL: true,
     },
   })
   const testRegion = 'some-region'

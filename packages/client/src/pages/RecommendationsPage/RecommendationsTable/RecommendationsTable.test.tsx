@@ -5,6 +5,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import each from 'jest-each'
 import moment from 'moment'
+import { act } from 'react-dom/test-utils'
+import React from 'react'
 import { EstimationResult } from '@cloud-carbon-footprint/common'
 import { Co2eUnit, ServiceResult } from '../../../Types'
 import {
@@ -14,8 +16,6 @@ import {
 } from '../../../utils/data'
 import RecommendationsTable from './RecommendationsTable'
 import { useRemoteFootprintService } from '../../../utils/hooks'
-import { act } from 'react-dom/test-utils'
-import React from 'react'
 
 jest.mock('../../../utils/hooks/FootprintServiceHook')
 
@@ -30,6 +30,10 @@ const testProps = {
   recommendations: [],
   handleRowClick: jest.fn(),
   co2eUnit: Co2eUnit.MetricTonnes,
+  forecastDetails: {
+    missingDates: [],
+    groupBy: 'day',
+  },
 }
 
 describe('Recommendations Table', () => {

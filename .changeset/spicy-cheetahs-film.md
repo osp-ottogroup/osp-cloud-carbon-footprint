@@ -2,4 +2,4 @@
 '@cloud-carbon-footprint/azure': patch
 ---
 
-fixes incorrect redis/c0 size
+fixes broken azure recommendations tests

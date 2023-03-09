@@ -45,30 +45,30 @@ test('side drawer opens and closes when clicked', async (t) => {
 test('total metric tons is loaded correctly with different dropdown selections', async (t) => {
   await page.totalCo2Amount.with({ visibilityCheck: true }).exists //await core element before getting any of its text-specific versions
   //check initial value then check after each filter option
-  await t.expect(page.totalCo2Amount.withText('309').exists).ok() //the other problem element //todo: minimize dataset-specific selectors
+  await t.expect(page.totalCo2Amount.withText('255').exists).ok() //the other problem element //todo: minimize dataset-specific selectors
   await t.click(page.cloudProviderDropDown)
   await t.click(page.awsDropdownItem)
-  await t.expect(page.totalCo2Amount.withText('86').exists).ok()
+  await t.expect(page.totalCo2Amount.withText('74').exists).ok()
   await t.click(page.accountsDropDown)
   await t.click(page.accountsDropdownItem)
-  await t.expect(page.totalCo2Amount.withText('123').exists).ok()
+  await t.expect(page.totalCo2Amount.withText('107').exists).ok()
   await t.click(page.servicesDropDown)
   await t.click(page.servicesDropdownItem)
-  await t.expect(page.totalCo2Amount.withText('109').exists).ok()
+  await t.expect(page.totalCo2Amount.withText('93').exists).ok()
 })
 
 test('carbon equivalency component displays each option when clicked', async (t) => {
   await t
     .click(page.flightsButton)
-    .expect(page.emissionsRecord.withText('381').exists) //todo: minimize dataset-specific selectors
+    .expect(page.emissionsRecord.withText('315').exists) //todo: minimize dataset-specific selectors
     .ok()
   await t
     .click(page.phonesButton)
-    .expect(page.emissionsRecord.withText('37.6+ M').exists)
+    .expect(page.emissionsRecord.withText('31.0+ M').exists)
     .ok()
   await t
     .click(page.treesButton)
-    .expect(page.emissionsRecord.withText('5,109').exists)
+    .expect(page.emissionsRecord.withText('4,216').exists)
     .ok()
 })
 

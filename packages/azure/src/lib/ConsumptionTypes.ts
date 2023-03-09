@@ -23,11 +23,15 @@ export type UsageRowPageErrorResponse = {
   message: string
 }
 
+type AzureTags = {
+  [tagKey: string]: string
+}
+
 export type UsageDetailResult = {
   id: string
   name: string
   type: string
-  tags: any
+  tags: AzureTags
   kind: string
   properties: LegacyUsageDetail | ModernUsageDetail
 }
@@ -107,6 +111,7 @@ export const STORAGE_USAGE_TYPES: string[] = [
   '10 DTUs',
   'S0 DTUs',
   'B DTUs',
+  'B DTU',
   'eDTUs',
   'On Premises Server Protected Instances',
   'Standard Trial Nodes',
@@ -119,6 +124,9 @@ export const STORAGE_USAGE_TYPES: string[] = [
   'Basic User',
   'Standard Nodes',
   'Microsoft-hosted CI',
+  'Data Processing Unit',
+  'Pay as you go Warm Storage',
+  'Standard Unit',
 ]
 
 export const NETWORKING_USAGE_TYPES: string[] = [

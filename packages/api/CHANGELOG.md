@@ -1,5 +1,29 @@
 # @cloud-carbon-footprint/api
 
+## 1.6.0
+
+### Minor Changes
+
+- 689c973e: Add support for Azure Tags and resource groups
+
+### Patch Changes
+
+- Updated dependencies [689c973e]
+- Updated dependencies [689c973e]
+- Updated dependencies [689c973e]
+  - @cloud-carbon-footprint/common@1.9.0
+
+## 1.5.1
+
+### Patch Changes
+
+- c1684f40: updates for handling CORS. Please refer to create app template updates [here](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/9afbcf704797f20867b54c6a627415674f49db96)
+- Updated dependencies [40a8f3d1]
+- Updated dependencies [692d6aaf]
+- Updated dependencies [09e72585]
+- Updated dependencies [222bfed3]
+  - @cloud-carbon-footprint/app@1.1.0
+
 ## 1.5.0
 
 ### Minor Changes

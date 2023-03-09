@@ -8,6 +8,7 @@ import {
 } from '@azure/arm-consumption'
 import { PagedAsyncIterableIterator } from '@azure/core-paging'
 import {
+  configLoader,
   containsAny,
   convertGigaBytesToTerabyteHours,
   convertTerabytesToGigabytes,
@@ -83,6 +84,7 @@ export default class ConsumptionManagementService {
   private readonly consumptionManagementLogger: Logger
   private readonly consumptionManagementRateLimitRemainingHeader: string
   private readonly consumptionManagementRetryAfterHeader: string
+
   constructor(
     private readonly computeEstimator: ComputeEstimator,
     private readonly ssdStorageEstimator: StorageEstimator,
@@ -166,7 +168,7 @@ export default class ConsumptionManagementService {
         id: '',
         name: '',
         type: '',
-        tags: '',
+        tags: {},
         kind: 'legacy' as const,
         properties: {
           kind: 'legacy' as const,
@@ -194,7 +196,6 @@ export default class ConsumptionManagementService {
           serviceName: inputDataRow.serviceName,
           region: inputDataRow.region,
           usageType: inputDataRow.usageType,
-          usageUnit: inputDataRow.usageUnit,
           kilowattHours: footprintEstimate.kilowattHours,
           co2e: footprintEstimate.co2e,
         })
@@ -209,7 +210,6 @@ export default class ConsumptionManagementService {
             serviceName: inputDataRow.serviceName,
             region: inputDataRow.region,
             usageType: inputDataRow.usageType,
-            usageUnit: inputDataRow.usageUnit,
             kilowattHours: footprintEstimate.kilowattHours,
             co2e: footprintEstimate.co2e,
           })
@@ -302,34 +302,98 @@ export default class ConsumptionManagementService {
     return usageRowDetails
   }
 
+  private async queryConsumptionUsageDetails(
+    startDate: Date,
+    endDate: Date,
+    includeStart = true,
+    includeEnd = true,
+    maxRetries = 10,
+  ): Promise<Array<UsageDetailResult>> {
+    let currentTry = 0
+
+    const errorMsg = `Azure ConsumptionManagementClient UsageDetailRow paging for time range ${startDate.toISOString()} to ${endDate.toISOString()} failed. Reason:`
+
+    while (currentTry <= maxRetries) {
+      currentTry++
+      try {
+        const options = {
+          expand: 'properties/meterDetails',
+          filter: `properties/usageStart ${
+            includeStart ? 'ge' : 'gt'
+          } '${startDate.toISOString()}' AND properties/usageEnd ${
+            includeEnd ? 'le' : 'lt'
+          } '${endDate.toISOString()}'`,
+        }
+        this.consumptionManagementLogger.debug(
+          `Querying consumption usage details from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+        )
+        const usageRows = this.consumptionManagementClient.usageDetails.list(
+          `/subscriptions/${this.consumptionManagementClient.subscriptionId}/`,
+          options,
+        )
+        return await this.pageThroughUsageRows(usageRows)
+      } catch (e) {
+        await this.waitIfRateLimitExceeded(e, errorMsg)
+      }
+    }
+
+    const err = new Error(
+      `${errorMsg} max retries of ${maxRetries} exceeded, consider setting a smaller chunk size using AZURE_CONSUMPTION_CHUNKS_DAYS`,
+    )
+    this.consumptionManagementLogger.error(err.message, err)
+    throw err
+  }
+
   private async getConsumptionUsageDetails(
     startDate: Date,
     endDate: Date,
-    retry = false,
   ): Promise<Array<UsageDetailResult>> {
-    try {
-      const options = {
-        expand: 'properties/meterDetails',
-        filter: `properties/usageStart ge '${startDate.toISOString()}' AND properties/usageEnd le '${endDate.toISOString()}'`,
-      }
-      const usageRows = this.consumptionManagementClient.usageDetails.list(
-        `/subscriptions/${this.consumptionManagementClient.subscriptionId}/`,
-        options,
-      )
-      const usageRowDetails = await this.pageThroughUsageRows(usageRows)
-      if (retry) {
-        this.consumptionManagementLogger.info(
-          'Retry Successful! Continuing grabbing estimates...',
-        )
-      }
-      return usageRowDetails
-    } catch (e) {
-      const errorMsg =
-        'Azure ConsumptionManagementClient UsageDetailRow paging failed. Reason:'
-      await this.waitIfRateLimitExceeded(e, errorMsg)
-      retry = true
-      return this.getConsumptionUsageDetails(startDate, endDate, retry)
+    this.consumptionManagementLogger.info(
+      `Getting consumption usage details from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+    )
+    const AZURE = configLoader().AZURE
+
+    // no chunking is wished for
+    if (!AZURE.CONSUMPTION_CHUNKS_DAYS) {
+      return await this.queryConsumptionUsageDetails(startDate, endDate)
     }
+
+    this.consumptionManagementLogger.info(
+      `Time range will be requested in chunks of ${AZURE.CONSUMPTION_CHUNKS_DAYS} days`,
+    )
+
+    const stepMs = AZURE.CONSUMPTION_CHUNKS_DAYS * 24 * 60 * 60 * 1000 // step size in ms to request at once
+
+    const result: UsageDetailResult[] = []
+    let currentStartDate = new Date(startDate)
+
+    let last = false
+
+    while (currentStartDate <= endDate) {
+      let currentEndDate = new Date(
+        // do not overstep end date
+        Math.min(currentStartDate.getTime() + stepMs, endDate.getTime()),
+      )
+      if (currentEndDate >= endDate) last = true
+
+      if (!last) {
+        // subtract 1 ms to get the end of the day before
+        // this avoid duplicate results in the azure query
+        currentEndDate = new Date(currentEndDate.getTime() - 1)
+      }
+
+      const usageRowDetails = await this.queryConsumptionUsageDetails(
+        currentStartDate,
+        currentEndDate,
+        true,
+        last, // if this is the last time slice, the end date should be included
+      )
+      result.push(...usageRowDetails)
+
+      currentStartDate = new Date(currentStartDate.getTime() + stepMs)
+    }
+
+    return result
   }
 
   private getEstimateByPricingUnit(
@@ -701,10 +765,11 @@ export default class ConsumptionManagementService {
       this.isSSDStorage(consumptionDetailRow) &&
       this.isManagedDiskStorage(consumptionDetailRow)
     ) {
+      // Extract disk type according to pattern of Managed SSD names
+      const matchingDiskType =
+        consumptionDetailRow.usageType.match(/(P|E)\d{1,2}/)[0]
       return convertGigaBytesToTerabyteHours(
-        SSD_MANAGED_DISKS_STORAGE_GB[
-          consumptionDetailRow.usageType.replace(/Disks?/, '').trim()
-        ],
+        SSD_MANAGED_DISKS_STORAGE_GB[matchingDiskType],
       )
     }
 

@@ -13,6 +13,11 @@ import {
 import { AZURE_REGIONS } from './AzureRegions'
 import { UsageDetailResult } from './ConsumptionTypes'
 import { LegacyUsageDetail, ModernUsageDetail } from '@azure/arm-consumption'
+import { configLoader, Logger } from '@cloud-carbon-footprint/common'
+
+const RESOURCE_GROUP_TAG_NAME = 'resourceGroup'
+
+const unknownAzureRegions: string[] = []
 
 export default class ConsumptionDetailRow extends BillingDataRow {
   constructor(usageDetail: UsageDetailResult) {
@@ -24,6 +29,20 @@ export default class ConsumptionDetailRow extends BillingDataRow {
     this.vCpuHours = this.usageAmount * this.getVCpus()
     this.gpuHours = this.usageAmount * this.getGpus()
     this.region = this.getRegionFromResourceLocation()
+
+    this.tags = {}
+
+    const tagNames = configLoader()?.AZURE?.RESOURCE_TAG_NAMES ?? []
+
+    for (const resourceTagName of tagNames) {
+      if (usageDetail?.tags?.[resourceTagName]) {
+        this.tags[resourceTagName] = usageDetail.tags[resourceTagName]
+      }
+    }
+
+    if (tagNames.includes(RESOURCE_GROUP_TAG_NAME)) {
+      this.tags.resourceGroup = usageDetail.properties.resourceGroup
+    }
   }
 
   public getVCpus(): number {
@@ -49,6 +68,14 @@ export default class ConsumptionDetailRow extends BillingDataRow {
         return region.name
       }
     }
+
+    if (!unknownAzureRegions.includes(this.region)) {
+      new Logger('AzureRegions').warn(
+        `Found unknown azure region '${this.region}', please add it to the AzureRegions.ts file and submit a PR, thank you!`,
+      )
+      unknownAzureRegions.push(this.region)
+    }
+
     return AZURE_REGIONS.UNKNOWN.name
   }
 

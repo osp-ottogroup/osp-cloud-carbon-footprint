@@ -21,7 +21,7 @@ If you want to run project in a disposable development environment to see how Cl
 
 - Git
 
-- Node.js >= 14.18.1 (tip: use [nvm](https://github.com/nvm-sh/nvm) or [n](https://github.com/tj/n) to manage multiple Node versions)
+- Node.js [Active LTS Release](https://nodejs.org/en/blog/release/) (tip: use [nvm](https://github.com/nvm-sh/nvm) or [n](https://github.com/tj/n) to manage multiple Node versions)
 
 - Yarn (latest)
 
@@ -65,6 +65,8 @@ yarn install && yarn guided-install
 ```
 
 This will install dependencies for all packages, then guide you through setting up credentials and environment variables to analyze the footprint of your AWS, GCP, or Azure account.
+
+You can also use this method to setup a connection to a MongoDB instance for [storing your estimates](../ConfigurationOptions/DataPersistenceAndCaching.md#mongodb-storage).
 
 If you have any problems with the guided install, you can instead choose to do a standard install.
 
