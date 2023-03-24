@@ -234,7 +234,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: node:18-alpine3.15
+      image: node:14.18-alpine3.13
     environment:
       name: production
     env:
@@ -293,7 +293,6 @@ jobs:
 
           cp packages/client/app-staging.yaml dist-workspace/packages/client
 
-          echo "start yarn installation..."
           # We need to set yarn to v1 because App Engine will only install with a yarn.lock file generated from this version.
           yarn set version 1.22.4
 
@@ -303,13 +302,7 @@ jobs:
           cd dist-workspace/packages/api
           # Generate yarn.lock file
           yarn install
-          echo "yarn installation finished..."
-          echo "DEBUG: cat ./create_server_env_file.sh"
-          cat ./create_server_env_file.sh
-          echo "DEBUG: cat ./create_server_env_file.sh finished..."
-          echo "start ./create_server_env_file.sh ..."          
           ./create_server_env_file.sh
-          echo "./create_server_env_file.sh finished..."
           cd ../../..
 
           # Store service account
@@ -328,7 +321,7 @@ jobs:
     needs: deploy-staging
     runs-on: ubuntu-latest
     container:
-      image: node:18-alpine3.15
+      image: node:16.19-alpine3.17
     environment:
       name: production
     env:
