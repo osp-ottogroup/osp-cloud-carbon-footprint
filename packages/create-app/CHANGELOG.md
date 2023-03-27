@@ -1,5 +1,23 @@
 # @cloud-carbon-footprint/create-app
 
+## 2.3.3
+
+### Patch Changes
+
+- 0339a2fe: Fixes client template tsconfig
+
+## 2.3.2
+
+### Patch Changes
+
+- bb8bf10b: Fix resolved package versions
+
+## 2.3.1
+
+### Patch Changes
+
+- 4872bc98: Fix incompatible @azure/arm-consumption version
+
 ## 2.3.0
 
 ### Minor Changes
