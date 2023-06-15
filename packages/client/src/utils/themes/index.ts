@@ -94,6 +94,50 @@ const defaultTheme = () => {
   })
 }
 
+const darkTheme = () => {
+  return createTheme({
+    palette: {
+      type: 'dark',
+      background: {
+        default: '#303030',
+      },
+      primary: {
+        main: '#FF6E00',
+      },
+      secondary: {
+        main: '#90CAF9',
+      },
+      chart: [
+        // primary
+        { main: '#FF6E00' },
+        { main: '#FFC107' },
+        { main: '#90CAF9' },
+        { main: '#9C27B0' },
+        { main: '#F06292' },
+        { main: '#4CAF50' },
+        { main: '#607D8B' },
+        { main: '#FF4081' },
+        { main: '#8D6E63' },
+        { main: '#FF5252' },
+        // secondary
+        { main: '#FF9800' },
+        { main: '#FFEB3B' },
+        { main: '#2196F3' },
+        { main: '#673AB7' },
+        { main: '#E91E63' },
+        { main: '#8BC34A' },
+        { main: '#9E9E9E' },
+      ],
+      primaryBlue: '#90CAF9',
+      lightBlue: 'rgba(63, 81, 181, 0.08)',
+      lightTitle: '#FFFFFF',
+      lightMessage: '#90A4AE',
+      extLink: '#2196F3',
+    },
+  })
+}
+
+
 export function createTheme(options: SimpleThemeOptions): CCFTheme {
   const themeOptions = createThemeOptions(options)
   const baseTheme = createMuiTheme(themeOptions) as CCFTheme
@@ -105,4 +149,4 @@ const getChartColors = (theme: CCFTheme) => {
   return theme.palette.chart.map(({ main }) => main)
 }
 
-export { defaultTheme, getChartColors }
+export { defaultTheme, darkTheme, getChartColors }
