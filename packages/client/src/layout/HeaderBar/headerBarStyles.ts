@@ -2,63 +2,63 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles'
+import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     appBar: {
       zIndex: theme.zIndex.drawer + 1,
       flexGrow: 1,
-      color: '#465156',
-      backgroundColor: '#F7F8F8',
+      color: "#ffffff",
+      backgroundColor: "#383737",
     },
     logo: {
       height: 60,
     },
     navContainer: {
-      justifyContent: 'space-between',
+      justifyContent: "space-between",
     },
     title: {
-      display: 'flex',
+      display: "flex",
       gap: 15,
-      color: 'inherit',
-      textDecoration: 'inherit',
-      justifyContent: 'center',
-      alignItems: 'center',
+      color: "inherit",
+      textDecoration: "inherit",
+      justifyContent: "center",
+      alignItems: "center",
     },
     navLink: {
       fontSize: theme.typography.fontSize,
       marginRight: theme.spacing(5),
-      position: 'relative',
-      overflow: 'hidden',
-      color: 'inherit',
-      textDecoration: 'inherit',
-      '&::after': {
+      position: "relative",
+      overflow: "hidden",
+      color: "inherit",
+      textDecoration: "inherit",
+      "&::after": {
         content: '""',
-        position: 'absolute',
+        position: "absolute",
         bottom: 0,
         left: 0,
-        width: '100%',
-        height: '0.15em',
-        backgroundColor: 'white',
+        width: "100%",
+        height: "0.15em",
+        backgroundColor: "white",
         opacity: 1,
-        transition: 'opacity 300ms, transform 300ms',
-        transform: 'translate3d(-110%, 0, 0)',
+        transition: "opacity 300ms, transform 300ms",
+        transform: "translate3d(-110%, 0, 0)",
       },
       // Animations for underline on hover
-      '&:hover::after': {
-        transform: 'translate3d(0, 0, 0)',
+      "&:hover::after": {
+        transform: "translate3d(0, 0, 0)",
       },
-      '&:focus::after': {
-        transform: 'translate3d(0, 0, 0)',
+      "&:focus::after": {
+        transform: "translate3d(0, 0, 0)",
       },
     },
     activeNavLink: {
-      '&::after': {
-        transform: 'translate3d(0, 0, 0)',
+      "&::after": {
+        transform: "translate3d(0, 0, 0)",
       },
     },
-  }),
-)
+  })
+);
 
-export default useStyles
+export default useStyles;

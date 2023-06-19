@@ -2,151 +2,112 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import { CSSProperties } from 'react'
+import { CSSProperties } from "react";
 import {
   createTheme as createMuiTheme,
   Theme,
   ThemeOptions,
-} from '@material-ui/core/styles'
-import { Palette, PaletteOptions } from '@material-ui/core/styles/createPalette'
+} from "@material-ui/core/styles";
+import {
+  Palette,
+  PaletteOptions,
+} from "@material-ui/core/styles/createPalette";
 
 export type CCFPaletteAdditions = {
-  chart: Palette['primary'][]
-  primaryBlue: CSSProperties['color']
-  lightBlue: CSSProperties['color']
-  lightTitle: CSSProperties['color']
-  lightMessage: CSSProperties['color']
-  extLink: CSSProperties['color']
-}
+  chart: Palette["primary"][];
+  primaryBlue: CSSProperties["color"];
+  lightBlue: CSSProperties["color"];
+  lightTitle: "rgba(255,255,255,0.87)";
+  lightMessage: "#ffffff";
+  extLink: CSSProperties["color"];
+};
 
 export type CCFOptionsPaletteAdditions = {
-  chart: PaletteOptions['primary'][]
-  primaryBlue: CSSProperties['color']
-  lightBlue: CSSProperties['color']
-  lightTitle: CSSProperties['color']
-  lightMessage: CSSProperties['color']
-  extLink: CSSProperties['color']
-}
+  chart: PaletteOptions["primary"][];
+  primaryBlue: CSSProperties["color"];
+  lightBlue: CSSProperties["color"];
+  lightTitle: "rgba(255,255,255,0.87)";
+  lightMessage: "#ffffff";
+  extLink: CSSProperties["color"];
+};
 
-export type CCFPalette = Palette & CCFPaletteAdditions
+export type CCFPalette = Palette & CCFPaletteAdditions;
 
-export type CCFPaletteOptions = PaletteOptions & CCFOptionsPaletteAdditions
+export type CCFPaletteOptions = PaletteOptions & CCFOptionsPaletteAdditions;
 
 export interface CCFTheme extends Theme {
-  palette: CCFPalette
+  palette: CCFPalette;
 }
 
 export interface CCFThemeOptions extends ThemeOptions {
-  palette: CCFPaletteOptions
+  palette: CCFPaletteOptions;
 }
 
 export type SimpleThemeOptions = {
-  palette: CCFPaletteOptions
-}
+  palette: CCFPaletteOptions;
+};
 
 export function createThemeOptions(options: CCFThemeOptions): CCFThemeOptions {
-  const { palette } = options
+  const { palette } = options;
 
-  return { palette }
+  return { palette };
 }
 
 const defaultTheme = () => {
   return createTheme({
     palette: {
-      type: 'light',
+      type: "light",
       background: {
-        default: '#F7F8F8',
+        paper: "#282828",
+        default: "#121212",
       },
       primary: {
-        main: '#EC6559',
+        main: "#BB86FC",
+        light: "#ffffff",
       },
       secondary: {
-        main: '#566C80',
+        main: "#03DAC6",
       },
       chart: [
         // primary
-        { main: '#E62314' },
-        { main: '#6D797F' },
-        { main: '#566C80' },
-        { main: '#66A8C3' },
-        { main: '#F7BDB8' },
-        { main: '#D3C661' },
-        { main: '#B01B10' },
-        { main: '#70ADA3' },
-        { main: '#5D8F79' },
-        { main: '#FAD3D0' },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
+        { main: "#BB86FC" },
         // secondary
-        { main: '#5F696E' },
-        { main: '#8796BE' },
-        { main: '#66A8C3' },
-        { main: '#8796BE' },
-        { main: '#CBABAE' },
-        { main: '#9A9985' },
-        { main: '#BF7474' },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
+        { main: "#03DAC6" },
       ],
-      primaryBlue: '#566C80',
-      lightBlue: 'rgba(63, 81, 181, 0.08)',
-      lightTitle: 'rgba(0, 0, 0, 0.87)',
-      lightMessage: '#b0bec5',
+      primaryBlue: "#03DAC6",
+      lightBlue: "rgba(181,181,181,0.08)",
+      lightTitle: "rgba(255,255,255,0.87)",
+      lightMessage: "#ffffff",
       // leaving this here in case the color theme changes base on dark mode
-      extLink: '#66A8C3',
+      extLink: "#66A8C3",
     },
-  })
-}
-
-const darkTheme = () => {
-  return createTheme({
-    palette: {
-      type: 'dark',
-      background: {
-        default: '#F7F8F8',
-      },
-      primary: {
-        main: '#EC6559',
-      },
-      secondary: {
-        main: '#566C80',
-      },
-      chart: [
-        // primary
-        { main: '#E62314' },
-        { main: '#6D797F' },
-        { main: '#566C80' },
-        { main: '#66A8C3' },
-        { main: '#F7BDB8' },
-        { main: '#D3C661' },
-        { main: '#B01B10' },
-        { main: '#70ADA3' },
-        { main: '#5D8F79' },
-        { main: '#FAD3D0' },
-        // secondary
-        { main: '#5F696E' },
-        { main: '#8796BE' },
-        { main: '#66A8C3' },
-        { main: '#8796BE' },
-        { main: '#CBABAE' },
-        { main: '#9A9985' },
-        { main: '#BF7474' },
-      ],
-      primaryBlue: '#566C80',
-      lightBlue: 'rgba(63, 81, 181, 0.08)',
-      lightTitle: 'rgba(0, 0, 0, 0.87)',
-      lightMessage: '#b0bec5',
-      // leaving this here in case the color theme changes base on dark mode
-      extLink: '#66A8C3',
-    },
-  })
-}
+  });
+};
 
 export function createTheme(options: SimpleThemeOptions): CCFTheme {
-  const themeOptions = createThemeOptions(options)
-  const baseTheme = createMuiTheme(themeOptions) as CCFTheme
-  const theme = { ...baseTheme }
-  return theme
+  const themeOptions = createThemeOptions(options);
+  const baseTheme = createMuiTheme(themeOptions) as CCFTheme;
+  const theme = { ...baseTheme };
+  return theme;
 }
 
 const getChartColors = (theme: CCFTheme) => {
-  return theme.palette.chart.map(({ main }) => main)
-}
+  return theme.palette.chart.map(({ main }) => main);
+};
 
-export { defaultTheme, getChartColors }
+export { defaultTheme, getChartColors };
