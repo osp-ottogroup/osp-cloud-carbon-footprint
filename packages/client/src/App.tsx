@@ -69,10 +69,16 @@ export function App({ config = loadConfig() }: AppProps): ReactElement {
 
   const classes = useStyles()
 
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  const handleThemeToggle = () => {
+    setIsDarkMode((prevMode) => !prevMode)
+  }
+
   if (mobileWarningEnabled) {
     return (
       <Container maxWidth="xl" className={classes.appContainer}>
-        <HeaderBar />
+        <HeaderBar isDarkMode={isDarkMode} onThemeToggle={handleThemeToggle}/>
         <MobileWarning handleClose={handleWarningClose} />
       </Container>
     )
@@ -81,14 +87,13 @@ export function App({ config = loadConfig() }: AppProps): ReactElement {
   if (footprint.loading)
     return (
       <>
-        <HeaderBar />
+        <HeaderBar isDarkMode={isDarkMode} onThemeToggle={handleThemeToggle}/>
         <LoadingMessage message="Loading cloud data. This may take a while..." />
       </>
     )
 
   return (
     <>
-      <HeaderBar />
       <Container maxWidth={false} className={classes.appContainer}>
         <Routes>
           <Route

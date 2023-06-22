@@ -2,7 +2,7 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import { AppBar, Toolbar, Typography } from '@material-ui/core'
+import { AppBar, Toolbar, Typography, FormControlLabel, Switch } from '@material-ui/core'
 import React, { ReactElement } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Link } from 'react-router-dom'
@@ -10,7 +10,12 @@ import clsx from 'clsx'
 import useStyles from './headerBarStyles'
 import logo from './osp_ccf_logo.png'
 
-const HeaderBar = (): ReactElement => {
+interface HeaderBarProps {
+  isDarkMode: boolean;
+  onThemeToggle: () => void;
+}
+
+const HeaderBar = ({ isDarkMode, onThemeToggle }: HeaderBarProps): ReactElement => {
   const classes = useStyles()
 
   return (
@@ -46,6 +51,12 @@ const HeaderBar = (): ReactElement => {
         >
           <Typography component="h2">RECOMMENDATIONS</Typography>
         </NavLink>
+        <div style={{ marginLeft: 'auto', marginRight: '10px' }} className={classes.themeToggle}>
+          <FormControlLabel
+            control={<Switch checked={isDarkMode} onChange={onThemeToggle} />}
+            label="Light / Dark Mode"
+          />
+        </div>
       </Toolbar>
     </AppBar>
   )

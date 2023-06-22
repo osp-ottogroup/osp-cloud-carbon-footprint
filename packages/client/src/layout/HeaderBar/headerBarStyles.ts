@@ -9,8 +9,8 @@ const useStyles = makeStyles((theme: Theme) =>
     appBar: {
       zIndex: theme.zIndex.drawer + 1,
       flexGrow: 1,
-      color: '#465156',
-      backgroundColor: '#F7F8F8',
+      color: theme.palette.primary.main,
+      backgroundColor: theme.palette.background.default,
     },
     logo: {
       height: 60,
@@ -57,6 +57,10 @@ const useStyles = makeStyles((theme: Theme) =>
       '&::after': {
         transform: 'translate3d(0, 0, 0)',
       },
+    },
+    themeToggle: {
+      marginLeft: 'auto',
+      marginRight: '10px',
     },
   }),
 )

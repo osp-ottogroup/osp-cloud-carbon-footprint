@@ -2,17 +2,17 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import { makeStyles } from '@material-ui/core/styles'
+import { makeStyles, Theme } from '@material-ui/core/styles'
 
 const PADDING_FILTER = 0.5
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles((theme: Theme) => ({
   filterHeader: {
     top: 0,
     position: 'sticky', //make filter bar stick to top of container instead of page
     marginTop: '0px',
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: theme.palette.background.default,
     borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
     zIndex: 1199,
     padding: '9px 10px 7px 10px',
