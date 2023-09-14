@@ -13,6 +13,7 @@ import {
   convertGigaBytesToTerabyteHours,
   convertTerabytesToGigabytes,
   EstimationResult,
+  getEmissionsFactors,
   GroupBy,
   Logger,
   LookupTableInput,
@@ -79,6 +80,7 @@ import {
   AZURE_CLOUD_CONSTANTS,
   AZURE_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
 } from '../domain'
+import { AZURE_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES } from './AzureRegions'
 
 export default class ConsumptionManagementService {
   private readonly consumptionManagementLogger: Logger
@@ -111,34 +113,43 @@ export default class ConsumptionManagementService {
     const results: MutableEstimationResult[] = []
     const unknownRows: ConsumptionDetailRow[] = []
 
-    usageRows
-      .filter(
-        (consumptionRow) =>
-          new Date(consumptionRow.properties.date) >= startDate &&
-          new Date(consumptionRow.properties.date) <= endDate,
-      )
-      .map((consumptionRow) => {
-        const consumptionDetailRow: ConsumptionDetailRow =
-          new ConsumptionDetailRow(consumptionRow)
+    const filteredUsageRowsByDate = usageRows.filter(
+      (consumptionRow) =>
+        new Date(consumptionRow.date) >= startDate &&
+        new Date(consumptionRow.date) <= endDate,
+    )
 
-        this.updateTimestampByGrouping(grouping, consumptionDetailRow)
+    for (const consumptionRow of filteredUsageRowsByDate) {
+      const consumptionDetailRow: ConsumptionDetailRow =
+        new ConsumptionDetailRow(consumptionRow)
 
-        const footprintEstimate = this.getFootprintEstimateFromUsageRow(
-          consumptionDetailRow,
-          unknownRows,
+      this.updateTimestampByGrouping(grouping, consumptionDetailRow)
+
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          consumptionDetailRow.region,
+          consumptionDetailRow.timestamp.toISOString(),
+          AZURE_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
+          AZURE_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.consumptionManagementLogger,
         )
 
-        if (footprintEstimate) {
-          appendOrAccumulateEstimatesByDay(
-            results,
-            consumptionDetailRow,
-            footprintEstimate,
-            grouping,
-            [],
-          )
-        }
-        return []
-      })
+      const footprintEstimate = this.getFootprintEstimateFromUsageRow(
+        consumptionDetailRow,
+        unknownRows,
+        emissionsFactors,
+      )
+
+      if (footprintEstimate) {
+        appendOrAccumulateEstimatesByDay(
+          results,
+          consumptionDetailRow,
+          footprintEstimate,
+          grouping,
+          [],
+        )
+      }
+    }
 
     if (results.length > 0) {
       unknownRows.map((rowData: ConsumptionDetailRow) => {
@@ -157,38 +168,46 @@ export default class ConsumptionManagementService {
     return results
   }
 
-  public getEstimatesFromInputData(
+  public async getEstimatesFromInputData(
     inputData: LookupTableInput[],
-  ): LookupTableOutput[] {
+  ): Promise<LookupTableOutput[]> {
     const result: LookupTableOutput[] = []
     const unknownRows: ConsumptionDetailRow[] = []
 
-    inputData.map((inputDataRow: LookupTableInput) => {
+    for (const inputDataRow of inputData) {
       const usageRow = {
         id: '',
         name: '',
         type: '',
         tags: {},
         kind: 'legacy' as const,
-        properties: {
-          kind: 'legacy' as const,
-          date: new Date(''),
-          quantity: 1,
-          cost: 1,
-          meterDetails: {
-            meterName: inputDataRow.usageType,
-            unitOfMeasure: inputDataRow.usageUnit,
-            meterCategory: inputDataRow.serviceName,
-          },
+        date: new Date(''),
+        quantity: 1,
+        cost: 1,
+        meterDetails: {
+          meterName: inputDataRow.usageType,
+          unitOfMeasure: inputDataRow.usageUnit,
+          meterCategory: inputDataRow.serviceName,
           subscriptionName: '',
           resourceLocation: inputDataRow.region,
         },
       }
-
+      const dateTime = new Date().toISOString()
       const consumptionDetailRow = new ConsumptionDetailRow(usageRow)
+
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          consumptionDetailRow.region,
+          dateTime,
+          AZURE_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
+          AZURE_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.consumptionManagementLogger,
+        )
+
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         consumptionDetailRow,
         unknownRows,
+        emissionsFactors,
       )
 
       if (footprintEstimate) {
@@ -200,7 +219,7 @@ export default class ConsumptionManagementService {
           co2e: footprintEstimate.co2e,
         })
       }
-    })
+    }
 
     if (result.length > 0) {
       unknownRows.map((inputDataRow: ConsumptionDetailRow) => {
@@ -223,12 +242,16 @@ export default class ConsumptionManagementService {
   private getFootprintEstimateFromUsageRow(
     consumptionDetailRow: ConsumptionDetailRow,
     unknownRows: ConsumptionDetailRow[],
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate | void {
     if (!this.isUnsupportedUsage(consumptionDetailRow)) {
       if (this.isUnknownUsage(consumptionDetailRow)) {
         unknownRows.push(consumptionDetailRow)
       } else {
-        return this.getEstimateByPricingUnit(consumptionDetailRow)
+        return this.getEstimateByPricingUnit(
+          consumptionDetailRow,
+          emissionsFactors,
+        )
       }
     }
   }
@@ -404,9 +427,8 @@ export default class ConsumptionManagementService {
 
   private getEstimateByPricingUnit(
     consumptionDetailRow: ConsumptionDetailRow,
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate {
-    const emissionsFactors: CloudConstantsEmissionsFactors =
-      AZURE_EMISSIONS_FACTORS_METRIC_TON_PER_KWH
     const powerUsageEffectiveness: number = AZURE_CLOUD_CONSTANTS.getPUE(
       consumptionDetailRow.region,
     )
@@ -498,7 +520,9 @@ export default class ConsumptionManagementService {
           powerUsageEffectiveness,
           emissionsFactors,
         )
+      case MEMORY_USAGE_UNITS.GB_SECOND_1:
       case MEMORY_USAGE_UNITS.GB_SECONDS_50000:
+      case MEMORY_USAGE_UNITS.GB_HOUR_1:
       case MEMORY_USAGE_UNITS.GB_HOURS_1000:
         return this.getMemoryFootprintEstimate(
           consumptionDetailRow,
@@ -752,8 +776,13 @@ export default class ConsumptionManagementService {
   private getUsageAmountInGigabyteHours(
     consumptionDetailRow: ConsumptionDetailRow,
   ): number {
-    if (consumptionDetailRow.usageUnit === MEMORY_USAGE_UNITS.GB_SECONDS_50000)
+    if (
+      consumptionDetailRow.usageUnit === MEMORY_USAGE_UNITS.GB_SECONDS_50000 ||
+      consumptionDetailRow.usageUnit === MEMORY_USAGE_UNITS.GB_SECOND_1
+    )
       return consumptionDetailRow.usageAmount / 3600
+    if (consumptionDetailRow.usageUnit === MEMORY_USAGE_UNITS.GB_HOUR_1)
+      return consumptionDetailRow.usageAmount
     return this.getGigabyteHoursFromInstanceTypeAndProcessors(
       consumptionDetailRow.usageType,
       consumptionDetailRow.usageAmount,

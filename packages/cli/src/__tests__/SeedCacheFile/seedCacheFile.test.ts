@@ -3,9 +3,12 @@
  */
 
 import {
+  configLoader,
   EstimationRequestValidationError,
   EstimationResult,
 } from '@cloud-carbon-footprint/common'
+import { MongoDbCacheManager } from '@cloud-carbon-footprint/app'
+import moment from 'moment'
 import seedCacheFile from '../../SeedCacheFile/seedCacheFile'
 import * as common from '../../common'
 
@@ -27,6 +30,16 @@ jest.mock('@cloud-carbon-footprint/app', () => ({
     }
   }),
   cache: jest.fn(),
+}))
+
+jest.mock('@cloud-carbon-footprint/common', () => ({
+  ...(jest.requireActual('@cloud-carbon-footprint/common') as Record<
+    string,
+    unknown
+  >),
+  configLoader: jest.fn().mockImplementation(() => ({
+    CACHE_MODE: '',
+  })),
 }))
 
 describe('seedCacheFile', () => {
@@ -189,35 +202,121 @@ describe('seedCacheFile', () => {
           'Done! Estimates have been successfully seeded to the cache file!',
         )
       })
-      it('makes separate requests for a specified per day frequency', async () => {
-        mockInputPrompts.mockResolvedValueOnce(2) // option given for daysPerRequest
-        mockInputPrompts.mockResolvedValueOnce('') // No option given for cloud provider to seed
 
-        const expectedResponse: EstimationResult[] = []
-        mockGetCostAndEstimates.mockRestore()
-        mockGetCostAndEstimates.mockResolvedValue(expectedResponse)
+      // it('makes separate requests for a specified per day frequency', async () => {
+      //   mockInputPrompts.mockResolvedValueOnce(2) // option given for daysPerRequest
+      //   mockInputPrompts.mockResolvedValueOnce('') // No option given for cloud provider to seed
+      //
+      //   const expectedResponse: EstimationResult[] = []
+      //   mockGetCostAndEstimates.mockRestore()
+      //   mockGetCostAndEstimates.mockResolvedValue(expectedResponse)
+      //
+      //   await seedCacheFile()
+      //
+      //   expect(mockGetCostAndEstimates).toHaveBeenCalledTimes(2)
+      //
+      //   expect(console.info).toHaveBeenNthCalledWith(
+      //     1,
+      //     'Seeding cache file using split requests...',
+      //   )
+      //   expect(console.info).toHaveBeenNthCalledWith(
+      //     2,
+      //     'Fetching estimates from 2020-07-01 to 2020-07-02...',
+      //   )
+      //   expect(console.info).toHaveBeenNthCalledWith(
+      //     3,
+      //     'Fetching estimates for 2020-07-03...',
+      //   )
+      //
+      //   expect(console.info).lastCalledWith(
+      //     'Done! Estimates have been successfully seeded to the cache file!',
+      //   )
+      // })
 
-        await seedCacheFile()
+      it.each([
+        ['day', '2020-07-02'],
+        ['week', '2020-07-08'],
+        ['month', '2020-08-01'],
+        ['quarter', '2020-10-01'],
+        ['year', '2021-07-01'],
+      ])(
+        'makes separate requests for a specified per %s frequency',
+        async (groupBy: string, nextDate: string) => {
+          // Required for setup between each parameterized test
+          mockInputPrompts.mockRestore()
+          mockListPrompts.mockRestore()
+          mockInputPrompts.mockResolvedValueOnce('2020-07-01')
 
-        expect(mockGetCostAndEstimates).toHaveBeenCalledTimes(2)
+          // create a variable that adds 1 unit of the groupBy parameter to the nextDate
+          const endDate = moment
+            .utc('2020-07-01')
+            .add(2, groupBy as moment.unitOfTime.DurationConstructor)
+            .format('YYYY-MM-DD')
+          mockInputPrompts.mockResolvedValueOnce(endDate) // option given for end date
 
-        expect(console.info).toHaveBeenNthCalledWith(
-          1,
-          'Seeding cache file using split requests...',
-        )
-        expect(console.info).toHaveBeenNthCalledWith(
-          2,
-          'Fetching estimates from 2020-07-01 to 2020-07-02...',
-        )
-        expect(console.info).toHaveBeenNthCalledWith(
-          3,
-          'Fetching estimates for 2020-07-03...',
-        )
+          mockListPrompts
+            .mockResolvedValueOnce(groupBy)
+            .mockResolvedValueOnce('split')
 
-        expect(console.info).lastCalledWith(
-          'Done! Estimates have been successfully seeded to the cache file!',
-        )
+          mockInputPrompts.mockResolvedValueOnce(2) // option given for request frequency
+          mockInputPrompts.mockResolvedValueOnce('') // No option given for cloud provider to seed
+
+          mockListPrompts.mockResolvedValueOnce(groupBy)
+
+          const expectedResponse: EstimationResult[] = []
+          mockGetCostAndEstimates.mockRestore()
+          mockGetCostAndEstimates.mockResolvedValue(expectedResponse)
+
+          await seedCacheFile()
+
+          expect(mockGetCostAndEstimates).toHaveBeenCalledTimes(2)
+
+          expect(console.info).toHaveBeenNthCalledWith(
+            1,
+            'Seeding cache file using split requests...',
+          )
+          expect(console.info).toHaveBeenNthCalledWith(
+            2,
+            `Fetching estimates from 2020-07-01 to ${nextDate}...`,
+          )
+
+          expect(console.info).lastCalledWith(
+            'Done! Estimates have been successfully seeded to the cache file!',
+          )
+        },
+      )
+    })
+  })
+
+  describe('database connection', () => {
+    it('should initialize MongoDB client when it is configured as the cache mode', async () => {
+      ;(configLoader as jest.Mock).mockReturnValue({
+        ...configLoader(),
+        CACHE_MODE: 'MONGODB',
       })
+
+      const mockCreateDbConnection = jest.fn()
+      const mockMongoClient: any = { close: jest.fn() }
+
+      MongoDbCacheManager.createDbConnection = mockCreateDbConnection
+      MongoDbCacheManager.mongoClient = mockMongoClient
+
+      mockInputPrompts
+        .mockResolvedValueOnce('2020-07-01')
+        .mockResolvedValueOnce('2020-07-07')
+        .mockResolvedValueOnce('')
+
+      mockListPrompts
+        .mockResolvedValueOnce('day')
+        .mockResolvedValueOnce('single')
+
+      const mockResponse: EstimationResult[] = []
+      mockGetCostAndEstimates.mockResolvedValueOnce(mockResponse)
+
+      await seedCacheFile()
+
+      expect(mockCreateDbConnection).toHaveBeenCalledTimes(1)
+      expect(mockMongoClient.close).toHaveBeenCalledTimes(1)
     })
   })
 })

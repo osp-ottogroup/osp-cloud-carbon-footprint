@@ -14,9 +14,9 @@ class Page {
     //--footprint page components here
 
     //main components
-    this.cloudProviders = Selector('span').withText('Cloud Providers: 3 of 3')
-    this.accounts = Selector('span').withText('Accounts: 15 of 15') //todo: minimize dataset-specific selectors
-    this.services = Selector('span').withText('Services: 8 of 8')
+    this.cloudProviders = Selector('span').withText('Cloud Providers')
+    this.accounts = Selector('span').withText('Accounts')
+    this.services = Selector('span').withText('Services')
     this.lineChart = Selector('#apexchartslineChart')
     this.carbonComparisonCard = Selector('#carbonComparisonCard')
     this.emissionsBreakdownContainer = Selector('#emissionsBreakdownContainer')
@@ -30,18 +30,6 @@ class Page {
 
     //co2 amount dropdowns
     this.totalCo2Amount = Selector('#metric-one')
-    this.cloudProviderDropDown = Selector('#cloud-provider-filter')
-      .sibling('div')
-      .child('button')
-    this.accountsDropDown = Selector('#accounts-filter')
-      .sibling('div')
-      .child('button')
-    this.servicesDropDown = Selector('#services-filter')
-      .sibling('div')
-      .child('button')
-    this.awsDropdownItem = Selector('#cloud-provider-filter-option-1')
-    this.accountsDropdownItem = Selector('#accounts-filter-option-1')
-    this.servicesDropdownItem = Selector('#services-filter-option-1')
 
     //emissions breakdown
     this.flightsButton = Selector('#flights')
@@ -68,13 +56,13 @@ class Page {
 
     //recommendations - main components
     this.recommendationsButton = Selector('a').withText('RECOMMENDATIONS')
-    this.regions = Selector('span').withText('Regions: 9 of 9')
+    this.regions = Selector('span').withText('Regions')
     this.recommendationTypes = Selector('span').withText(
       'Recommendation Types: 8 of 8',
     )
-    this.recAccounts = Selector('span').withText('Accounts: 15 of 15') //todo: minimize dataset-specific selectors
+    this.recAccounts = Selector('span').withText('Accounts')
 
-    //forecast card components
+    // forecast card components
     this.lastThirtyDayTotal = Selector(
       "[data-testid='forecast-card-last-thirty-day-total']",
     )
@@ -87,13 +75,6 @@ class Page {
     this.treeSeedlingsGrown = Selector("[data-testid='tree-seedlings-grown']")
     this.costSavingsPerMonth = Selector(
       "[data-testid='cost-savings-per-month']",
-    )
-    this.errorMessage = Selector("[data-testid='forecast-error-message']")
-
-    //table components
-    this.searchInput = Selector("[data-testid='search-input']")
-    this.recommendationsDataGrid = Selector(
-      "[data-testid='recommendations-data-grid']",
     )
 
     //units of measure
@@ -115,14 +96,19 @@ class Page {
     this.costSavingsProjectedThirtyDayTotal = Selector(
       "[data-testid='cost-savings-projected-thirty-day-total'",
     )
-    this.co2eSavingsField = "[data-field='co2eSavings']"
-    this.tableSavingsColumn = Selector(
-      `[role='columnheader']${this.co2eSavingsField}`,
-    ).nth(0)
-    this.firstSavingsCell = Selector(
-      `${this.co2eSavingsField}[role='cell']`,
-    ).nth(0)
+
+    //table components
+    this.searchInput = Selector("[data-testid='search-input']")
+    this.recommendationsDataGrid = Selector(
+      "[data-testid='recommendations-data-grid']",
+    )
+
     this.toggle = Selector("[data-testid='toggle-label']")
+
+    this.tableSavingsColumn = Selector(
+      '.MuiDataGrid-columnHeaderTitle',
+    ).withText('Potential Carbon Savings')
+    this.firstSavingsCell = Selector('[data-field="co2eSavings"]').nth(0)
   }
 
   async loadingScreen() {

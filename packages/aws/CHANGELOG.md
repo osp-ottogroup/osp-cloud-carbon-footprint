@@ -1,5 +1,33 @@
 # @cloud-carbon-footprint/aws
 
+## 0.15.0
+
+### Minor Changes
+
+- 6ffe7497: adds electricity maps api handling. For CLI create-app template changes, refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/2749723c00343865c7453fea29609ea6dad4b5e9).
+
+### Patch Changes
+
+- Updated dependencies [bc06b861]
+- Updated dependencies [7630768d]
+- Updated dependencies [6ffe7497]
+  - @cloud-carbon-footprint/common@1.13.0
+
+## 0.14.5
+
+### Patch Changes
+
+- 6bf5745d: Fixes Athena query column error for accounts without EC2 hours/usage
+
+## 0.14.4
+
+### Patch Changes
+
+- 2510e2a7: Adds support for additional usage types
+- 65386330: bumps ramda dependency
+- Updated dependencies [65386330]
+  - @cloud-carbon-footprint/core@0.17.3
+
 ## 0.14.3
 
 ### Patch Changes

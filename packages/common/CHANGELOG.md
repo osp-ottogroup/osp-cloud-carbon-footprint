@@ -1,5 +1,29 @@
 # @cloud-carbon-footprint/common
 
+## 1.13.0
+
+### Minor Changes
+
+- 6ffe7497: adds electricity maps api handling. For CLI create-app template changes, refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/2749723c00343865c7453fea29609ea6dad4b5e9).
+
+### Patch Changes
+
+- bc06b861: Fixes issue when asserting set values of INCLUDE_ESTIMATES config
+- 7630768d: updates default for include estimates config
+
+## 1.12.0
+
+### Minor Changes
+
+- 1a5d7636: Adds support for listing Azure subscription IDs to fetch
+- c82bf5fd: Adds config support for chunking/splitting azure requests by subscription
+
+## 1.11.0
+
+### Minor Changes
+
+- 0d20b32c: Adds support for Google Cloud resource tags to configuration options
+
 ## 1.10.0
 
 ### Minor Changes

@@ -7,7 +7,6 @@ import {
   GetQueryExecutionInput,
   GetQueryExecutionOutput,
   GetQueryResultsOutput,
-  Row,
   StartQueryExecutionInput,
   StartQueryExecutionOutput,
 } from 'aws-sdk/clients/athena'
@@ -25,6 +24,7 @@ import {
   wait,
   GroupBy,
   AWSAccount,
+  getEmissionsFactors,
 } from '@cloud-carbon-footprint/common'
 
 import {
@@ -72,6 +72,7 @@ import {
   EC2_INSTANCE_TYPES,
   INSTANCE_FAMILY_TO_INSTANCE_TYPE_MAPPING,
 } from './AWSInstanceTypes'
+import { AWS_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES } from './AWSRegions'
 
 export default class CostAndUsageReports {
   private readonly dataBaseName: string
@@ -114,17 +115,27 @@ export default class CostAndUsageReports {
       awsConfig.accounts.map((account) => [account.id, account]),
     )
 
-    usageRows.map((rowData: Row) => {
-      const costAndUsageReportRow =
+    for (const rowData of usageRows) {
+      const costAndUsageReportRow: CostAndUsageReportsRow =
         this.convertAthenaRowToCostAndUsageReportsRow(
           rowData.Data,
           tagNames,
           accounts,
         )
 
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          costAndUsageReportRow.region,
+          costAndUsageReportRow.timestamp.toISOString(),
+          AWS_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
+          AWS_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.costAndUsageReportsLogger,
+        )
+
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         costAndUsageReportRow,
         unknownRows,
+        emissionsFactors,
       )
 
       if (footprintEstimate)
@@ -135,11 +146,12 @@ export default class CostAndUsageReports {
           grouping,
           tagNames,
         )
-    })
+    }
 
     if (results.length > 0) {
       unknownRows.map((rowData: CostAndUsageReportsRow) => {
-        const footprintEstimate = this.getEstimateForUnknownUsage(rowData)
+        const footprintEstimate: FootprintEstimate =
+          this.getEstimateForUnknownUsage(rowData)
         if (footprintEstimate)
           appendOrAccumulateEstimatesByDay(
             results,
@@ -153,13 +165,13 @@ export default class CostAndUsageReports {
     return results
   }
 
-  getEstimatesFromInputData(
+  async getEstimatesFromInputData(
     inputData: LookupTableInput[],
-  ): LookupTableOutput[] {
+  ): Promise<LookupTableOutput[]> {
     const result: LookupTableOutput[] = []
     const unknownRows: CostAndUsageReportsRow[] = []
 
-    inputData.map((inputDataRow: LookupTableInput) => {
+    for (const inputDataRow of inputData) {
       const costAndUsageReportRow = new CostAndUsageReportsRow(
         null,
         '',
@@ -173,10 +185,21 @@ export default class CostAndUsageReports {
         1,
         {},
       )
+      const dateTime = new Date().toISOString()
+
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          costAndUsageReportRow.region,
+          dateTime,
+          AWS_EMISSIONS_FACTORS_METRIC_TON_PER_KWH,
+          AWS_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.costAndUsageReportsLogger,
+        )
 
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         costAndUsageReportRow,
         unknownRows,
+        emissionsFactors,
       )
 
       if (footprintEstimate) {
@@ -189,7 +212,7 @@ export default class CostAndUsageReports {
           co2e: footprintEstimate.co2e,
         })
       }
-    })
+    }
 
     if (result.length > 0) {
       unknownRows.map((inputDataRow: CostAndUsageReportsRow) => {
@@ -212,6 +235,7 @@ export default class CostAndUsageReports {
   private getFootprintEstimateFromUsageRow(
     costAndUsageReportRow: CostAndUsageReportsRow,
     unknownRows: CostAndUsageReportsRow[],
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate | void {
     if (this.usageTypeIsUnsupported(costAndUsageReportRow.usageType)) return
 
@@ -223,14 +247,13 @@ export default class CostAndUsageReports {
       return
     }
 
-    return this.getEstimateByUsageUnit(costAndUsageReportRow)
+    return this.getEstimateByUsageUnit(costAndUsageReportRow, emissionsFactors)
   }
 
   private getEstimateByUsageUnit(
     costAndUsageReportRow: CostAndUsageReportsRow,
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate {
-    const emissionsFactors: CloudConstantsEmissionsFactors =
-      AWS_EMISSIONS_FACTORS_METRIC_TON_PER_KWH
     const powerUsageEffectiveness: number = AWS_CLOUD_CONSTANTS.getPUE(
       costAndUsageReportRow.region,
     )
@@ -246,11 +269,13 @@ export default class CostAndUsageReports {
         const computeFootprint = new AWSComputeEstimatesBuilder(
           costAndUsageReportRow,
           this.computeEstimator,
+          emissionsFactors,
         ).computeFootprint
 
         const memoryFootprint = new AWSMemoryEstimatesBuilder(
           costAndUsageReportRow,
           this.memoryEstimator,
+          emissionsFactors,
         ).memoryFootprint
 
         const embodiedEmissions = this.getEmbodiedEmissions(
@@ -323,6 +348,7 @@ export default class CostAndUsageReports {
         return new AWSComputeEstimatesBuilder(
           costAndUsageReportRow,
           this.computeEstimator,
+          emissionsFactors,
         ).computeFootprint
       case KNOWN_USAGE_UNITS.GB_1:
       case KNOWN_USAGE_UNITS.GB_2:
@@ -545,6 +571,21 @@ export default class CostAndUsageReports {
     )
     const endDate = new Date(moment.utc(end).endOf('day') as unknown as Date)
 
+    const hasCpuColumn = await this.checkIfColumnExists('product_vcpu')
+
+    const optionalColumns = []
+    let optionalColumnSelects = ''
+
+    // Optionally adds product_vcpu in query if it exists in the schema. If there are more optional columns, we can modify this to check and for multiple columns.
+    if (hasCpuColumn) {
+      optionalColumns.push('product_vcpu')
+      optionalColumnSelects += 'product_vcpu as vCpus,\n'
+    } else {
+      this.costAndUsageReportsLogger.warn(
+        `'product_vcpu' column could not be verified in Athena table schema. This may occur if there was an error fetching the schema or when there is no historical CPU usage (i.e. EC2) for the configured account. The CPU column will be excluded from Athena Query`,
+      )
+    }
+
     const tagColumnNames = tagNames.map(tagNameToAthenaColumn)
 
     const tagSelectionExpression = tagColumnNames
@@ -560,18 +601,17 @@ export default class CostAndUsageReports {
       'line_item_product_code',
       'line_item_usage_type',
       'pricing_unit',
-      'product_vcpu',
+      ...optionalColumns,
       ...tagColumnNames,
     ].join(', ')
 
-    const params = {
-      QueryString: `SELECT ${dateExpression} AS timestamp,
+    const queryString = `SELECT ${dateExpression} AS timestamp,
                         line_item_usage_account_id as accountName,
                         product_region as region,
                         line_item_product_code as serviceName,
                         line_item_usage_type as usageType,
                         pricing_unit as usageUnit,
-                        product_vcpu as vCpus,
+                        ${optionalColumnSelects}
                         SUM(line_item_usage_amount) as usageAmount,
                         SUM(line_item_blended_cost) as cost
                         ${tagSelectionExpression}
@@ -580,9 +620,12 @@ export default class CostAndUsageReports {
                       AND line_item_usage_start_date BETWEEN from_iso8601_timestamp('${moment
                         .utc(startDate)
                         .toISOString()}') AND from_iso8601_timestamp('${moment
-        .utc(endDate)
-        .toISOString()}')
-                    GROUP BY ${groupByColumnNames}`,
+      .utc(endDate)
+      .toISOString()}')
+                    GROUP BY ${groupByColumnNames}`
+
+    const params = {
+      QueryString: queryString,
       QueryExecutionContext: {
         Database: this.dataBaseName,
       },
@@ -746,6 +789,29 @@ export default class CostAndUsageReports {
       cost,
       tags,
     )
+  }
+
+  /**
+   * Uses AWS Glue to get the schema of the Athena table and check if a given column is present
+   * @param columnName  The name of the column to check (i.e. 'product_vcpu')
+   * @private
+   */
+  private async checkIfColumnExists(columnName: string): Promise<boolean> {
+    try {
+      const athenaTableDescription =
+        await this.serviceWrapper.getAthenaTableDescription({
+          DatabaseName: this.dataBaseName,
+          Name: this.tableName,
+        })
+      const columns = athenaTableDescription.Table?.StorageDescriptor?.Columns
+      return columns?.some((column) => column.Name === columnName)
+    } catch (error) {
+      this.costAndUsageReportsLogger.error(
+        `Error verifying schema for Athena table: "${this.tableName}"`,
+        error,
+      )
+      return false
+    }
   }
 }
 

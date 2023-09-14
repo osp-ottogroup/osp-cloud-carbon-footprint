@@ -12,10 +12,12 @@ import {
   convertByteSecondsToTerabyteHours,
   convertBytesToGigabytes,
   EstimationResult,
+  getEmissionsFactors,
   GroupBy,
   Logger,
   LookupTableInput,
   LookupTableOutput,
+  TagCollection,
 } from '@cloud-carbon-footprint/common'
 
 import {
@@ -62,6 +64,7 @@ import {
 import BillingExportRow from './BillingExportRow'
 import { GCP_CLOUD_CONSTANTS, getGCPEmissionsFactors } from '../domain'
 import { GCP_REPLICATION_FACTORS_FOR_SERVICES } from './ReplicationFactors'
+import { GCP_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES } from './GCPRegions'
 
 export default class BillingExportTable {
   private readonly tableName: string
@@ -86,17 +89,32 @@ export default class BillingExportTable {
     end: Date,
     grouping: GroupBy,
   ): Promise<EstimationResult[]> {
-    const usageRows = await this.getUsage(start, end, grouping)
+    const gcpConfig = configLoader().GCP
+    const tagNames = gcpConfig.RESOURCE_TAG_NAMES
+    const usageRows = await this.getUsage(start, end, grouping, tagNames)
 
     const results: MutableEstimationResult[] = []
     const unknownRows: BillingExportRow[] = []
 
     this.billingExportTableLogger.info('Mapping over Usage Rows')
-    usageRows.map((usageRow) => {
+
+    for (const usageRow of usageRows) {
+      usageRow.tags = this.rawTagsToTagCollection(usageRow)
       const billingExportRow = new BillingExportRow(usageRow)
+
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          billingExportRow.region,
+          billingExportRow.timestamp.toISOString(),
+          getGCPEmissionsFactors(),
+          GCP_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.billingExportTableLogger,
+        )
+
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         billingExportRow,
         unknownRows,
+        emissionsFactors,
       )
       if (footprintEstimate)
         appendOrAccumulateEstimatesByDay(
@@ -104,9 +122,9 @@ export default class BillingExportTable {
           billingExportRow,
           footprintEstimate,
           grouping,
-          [],
+          tagNames,
         )
-    })
+    }
 
     if (results.length > 0) {
       unknownRows.map((rowData: BillingExportRow) => {
@@ -117,20 +135,21 @@ export default class BillingExportTable {
             rowData,
             footprintEstimate,
             grouping,
-            [],
+            tagNames,
           )
       })
     }
     return results
   }
 
-  getEstimatesFromInputData(
+  async getEstimatesFromInputData(
     inputData: LookupTableInput[],
-  ): LookupTableOutput[] {
+  ): Promise<LookupTableOutput[]> {
     const results: LookupTableOutput[] = []
     const unknownRows: BillingExportRow[] = []
 
-    inputData.map((inputDataRow: LookupTableInput) => {
+    // inputData.map((inputDataRow: LookupTableInput) => {
+    for (const inputDataRow of inputData) {
       const usageRow = {
         serviceName: inputDataRow.serviceName,
         usageAmount: 3600,
@@ -153,9 +172,20 @@ export default class BillingExportTable {
         billingExportRow.vCpuHours = instancevCpu * billingExportRow.vCpuHours
       }
 
+      const dateTime = new Date().toISOString()
+      const emissionsFactors: CloudConstantsEmissionsFactors =
+        await getEmissionsFactors(
+          billingExportRow.region,
+          dateTime,
+          getGCPEmissionsFactors(),
+          GCP_MAPPED_REGIONS_TO_ELECTRICITY_MAPS_ZONES,
+          this.billingExportTableLogger,
+        )
+
       const footprintEstimate = this.getFootprintEstimateFromUsageRow(
         billingExportRow,
         unknownRows,
+        emissionsFactors,
       )
       if (footprintEstimate)
         results.push({
@@ -166,7 +196,7 @@ export default class BillingExportTable {
           kilowattHours: footprintEstimate.kilowattHours,
           co2e: footprintEstimate.co2e,
         })
-    })
+    }
 
     if (results.length > 0) {
       unknownRows.map((billingExportRow: BillingExportRow) => {
@@ -189,6 +219,7 @@ export default class BillingExportTable {
   private getFootprintEstimateFromUsageRow(
     billingExportRow: BillingExportRow,
     unknownRows: BillingExportRow[],
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate | void {
     if (this.isUnsupportedUsage(billingExportRow.usageType)) return
 
@@ -197,15 +228,18 @@ export default class BillingExportTable {
       return
     }
 
-    return this.getEstimateByUsageUnit(billingExportRow, unknownRows)
+    return this.getEstimateByUsageUnit(
+      billingExportRow,
+      unknownRows,
+      emissionsFactors,
+    )
   }
 
   private getEstimateByUsageUnit(
     billingExportRow: BillingExportRow,
     unknownRows: BillingExportRow[],
+    emissionsFactors: CloudConstantsEmissionsFactors,
   ): FootprintEstimate | void {
-    const emissionsFactors: CloudConstantsEmissionsFactors =
-      getGCPEmissionsFactors()
     const powerUsageEffectiveness: number = GCP_CLOUD_CONSTANTS.getPUE(
       billingExportRow.region,
     )
@@ -593,15 +627,35 @@ export default class BillingExportTable {
     )[0]
   }
 
+  /* Note about resource tags:
+   * GCP supports three methods for labeling resources: tags (organization-level), project labels (project-level), and normal labels (resource-level).
+   * We support all three under one config with the use of prefixes to specify the type of label that a key corresponds to.
+   * The resulting key/value pairs are then merged into a single "tag" property for each resource.
+   */
   private async getUsage(
     start: Date,
     end: Date,
     grouping: GroupBy,
+    tagNames: string[],
   ): Promise<RowMetadata[]> {
     const startDate = new Date(
       moment.utc(start).startOf('day') as unknown as Date,
     )
     const endDate = new Date(moment.utc(end).endOf('day') as unknown as Date)
+
+    const [tags, projectLabels, labels] = this.tagNamesToQueryColumns(tagNames)
+
+    const [tagPropertySelections, tagPropertyJoins] = buildTagQuery(
+      'tags',
+      tags,
+    )
+    const [labelPropertySelections, labelPropertyJoins] = buildTagQuery(
+      'labels',
+      labels,
+    )
+    const [projectLabelPropertySelections, projectLabelPropertyJoins] =
+      buildTagQuery('projectLabels', projectLabels)
+
     const query = `SELECT
                     DATE_TRUNC(DATE(usage_start_time), ${
                       GCP_QUERY_GROUP_BY[grouping]
@@ -615,11 +669,17 @@ export default class BillingExportTable {
                     system_labels.value AS machineType,
                     SUM(usage.amount) AS usageAmount,
                     SUM(cost) AS cost
+                    ${tagPropertySelections}
+                    ${labelPropertySelections}
+                    ${projectLabelPropertySelections}
                   FROM
                     \`${this.tableName}\`
                   LEFT JOIN
                     UNNEST(system_labels) AS system_labels
                     ON system_labels.key = "compute.googleapis.com/machine_spec"
+                  ${tagPropertyJoins}
+                  ${labelPropertyJoins}
+                  ${projectLabelPropertyJoins}
                   WHERE
                     cost_type != 'rounding_error'
                     AND usage.unit IN ('byte-seconds', 'seconds', 'bytes', 'requests')
@@ -659,7 +719,7 @@ export default class BillingExportTable {
   private async createQueryJob(query: string) {
     let job: Job
     try {
-      ;[job] = await this.bigQuery.createQueryJob({ query: query })
+      ;[job] = await this.bigQuery.createQueryJob({ query })
     } catch (e) {
       let errorMessage = e
       if (e.errors) {
@@ -672,4 +732,62 @@ export default class BillingExportTable {
     }
     return job
   }
+
+  private tagNamesToQueryColumns(tagNames: string[]): string[][] {
+    const tagColumns: { [column: string]: string[] } = {
+      tag: [],
+      project: [],
+      label: [],
+    }
+
+    // For each string in tag label, check the colon-separated prefix to determine which type of label it is
+    tagNames.forEach((tag) => {
+      const [prefix, key] = tag.split(':')
+      const column = tagColumns[prefix]
+      if (column) {
+        column.push(key)
+      } else {
+        this.billingExportTableLogger.warn(
+          `Unknown tag prefix: ${prefix}. Ignoring tag: ${tag}`,
+        )
+      }
+    })
+
+    return Object.values(tagColumns)
+  }
+
+  private rawTagsToTagCollection(usageRow: any): TagCollection {
+    const parsedTags: TagCollection = {}
+    const options = ['tags', 'projectLabels', 'labels']
+
+    options.forEach((option) => {
+      const tags: string = usageRow[option]
+      if (tags) {
+        tags.split(', ').forEach((tag) => {
+          const [key, value] = tag.split(': ')
+          parsedTags[key] = value
+        })
+      }
+    })
+
+    return parsedTags
+  }
+}
+
+export const buildTagQuery = (columnName: string, keys: string[]): string[] => {
+  let propertySelections = '',
+    propertyJoins = ''
+
+  if (keys.length > 0) {
+    propertySelections = `, STRING_AGG(DISTINCT CONCAT(${columnName}.key, ": ", ${columnName}.value), ", ") AS ${columnName}`
+
+    propertyJoins = `\nLEFT JOIN\n UNNEST(${
+      columnName === 'projectLabels' ? 'project.labels' : columnName
+    }) AS ${columnName}\n`
+    const keyJoins = keys
+      .map((tag) => `${columnName}.key = "${tag}"`)
+      .join(' OR ')
+    propertyJoins += `ON ${keyJoins}`
+  }
+  return [propertySelections, propertyJoins]
 }

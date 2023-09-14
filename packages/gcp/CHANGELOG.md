@@ -1,5 +1,52 @@
 # @cloud-carbon-footprint/gcp
 
+## 0.14.0
+
+### Minor Changes
+
+- 6ffe7497: adds electricity maps api handling. For CLI create-app template changes, refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/2749723c00343865c7453fea29609ea6dad4b5e9).
+
+### Patch Changes
+
+- 53812d8d: Fix syntax errors in GCP Queries when using tags/labels
+- Updated dependencies [bc06b861]
+- Updated dependencies [7630768d]
+- Updated dependencies [6ffe7497]
+  - @cloud-carbon-footprint/common@1.13.0
+
+## 0.13.1
+
+### Patch Changes
+
+- 4683b86f: bug fix for gcp package
+- Updated dependencies [1a5d7636]
+- Updated dependencies [c82bf5fd]
+  - @cloud-carbon-footprint/common@1.12.0
+
+## 0.13.0
+
+### Minor Changes
+
+- 42b2359e: Updates emissions factors and PUE constants to latest published values
+
+### Patch Changes
+
+- Updated dependencies [0d20b32c]
+  - @cloud-carbon-footprint/common@1.11.0
+
+## 0.12.0
+
+### Minor Changes
+
+- e0299c2c: Replaces the use of googleapis with separate package clients
+- efbcad00: Adds support for including tags and labels in queries via config
+
+### Patch Changes
+
+- 56273914: adds DCU to gcp compute types
+- Updated dependencies [65386330]
+  - @cloud-carbon-footprint/core@0.17.3
+
 ## 0.11.1
 
 ### Patch Changes

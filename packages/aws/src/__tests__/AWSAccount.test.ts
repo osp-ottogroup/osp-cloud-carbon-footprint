@@ -41,6 +41,7 @@ describe('AWSAccount', () => {
   const CloudWatchLogs = jest.fn()
   const Athena = jest.fn()
   const S3Service = jest.fn()
+  const GlueService = jest.fn()
   let expectedCredentials: Credentials
 
   beforeEach(() => {
@@ -51,6 +52,7 @@ describe('AWSAccount', () => {
         CloudWatchLogs: CloudWatchLogs,
         Athena: Athena,
         S3: S3Service,
+        Glue: GlueService,
       }
     })
 
@@ -204,7 +206,7 @@ describe('AWSAccount', () => {
     expect(result).toEqual(expectedEstimatesResult)
   })
 
-  it('should getCostAndUsageReportsDataFromInputData', () => {
+  it('should getCostAndUsageReportsDataFromInputData', async () => {
     const inputData: LookupTableInput[] = [
       {
         serviceName: 'AmazonEC2',
@@ -216,7 +218,9 @@ describe('AWSAccount', () => {
     ]
 
     const AWSAccount = require('../application/AWSAccount').default
-    const result = AWSAccount.getCostAndUsageReportsDataFromInputData(inputData)
+    const result = await AWSAccount.getCostAndUsageReportsDataFromInputData(
+      inputData,
+    )
 
     const expectedResult: LookupTableOutput[] = [
       {

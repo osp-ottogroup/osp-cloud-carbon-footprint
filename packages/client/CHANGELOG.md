@@ -1,5 +1,39 @@
 # @cloud-carbon-footprint/client
 
+## 4.2.0
+
+### Minor Changes
+
+- 6bf5745d: Adds config for disabling forecast date validation
+
+### Patch Changes
+
+- cd3da603: Fix issue with concatentation of data from multiple footprint requests
+  For changes to create-app templates, please refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/pull/1194/commits/65f76245d4947cd0bb1b7e4a5b761868dd9c6da0).
+
+## 4.1.3
+
+### Patch Changes
+
+- 3d7a21ff: Improves recommendations forecast accuracy, and fixes cost formatting errors for local currencies
+- e942828d: updates imports/exports for plugin compatibility
+- Updated dependencies [1a5d7636]
+- Updated dependencies [c82bf5fd]
+  - @cloud-carbon-footprint/common@1.12.0
+
+## 4.1.2
+
+### Patch Changes
+
+- 93cf993f: updates mock data
+
+## 4.1.1
+
+### Patch Changes
+
+- bcb77429: fixes mock data and integration tests
+- 65386330: bumps ramda dependency
+
 ## 4.1.0
 
 ### Minor Changes

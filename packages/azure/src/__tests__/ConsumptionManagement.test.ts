@@ -540,6 +540,42 @@ describe('Azure Consumption Management Service', () => {
         periodEndDate: new Date('2020-11-02T23:59:59.000Z'),
         periodStartDate: new Date('2020-11-02T00:00:00.000Z'),
       },
+      {
+        timestamp: new Date('2020-11-04'),
+        serviceEstimates: [
+          {
+            accountId: subscriptionId,
+            accountName: subscriptionName,
+            cloudProvider: 'AZURE',
+            co2e: 5.878553215277167e-10,
+            cost: 10,
+            region: 'EastUS',
+            serviceName: 'Functions',
+            usesAverageCPUConstant: false,
+            kilowattHours: 0.0000015507871166666667,
+            tags: {
+              resourceGroup: 'test-resource-group',
+            },
+          },
+          {
+            accountId: subscriptionId,
+            accountName: subscriptionName,
+            cloudProvider: 'AZURE',
+            co2e: 0.0005042891453706233,
+            cost: 7,
+            region: 'CentralUS',
+            serviceName: 'Container Instances',
+            usesAverageCPUConstant: false,
+            kilowattHours: 1.1830719368513218,
+            tags: {
+              resourceGroup: 'test-resource-group',
+            },
+          },
+        ],
+        groupBy: grouping,
+        periodEndDate: new Date('2020-11-04T23:59:59.000Z'),
+        periodStartDate: new Date('2020-11-04T00:00:00.000Z'),
+      },
     ]
     expect(result).toEqual(expectedResult)
   })
@@ -1195,7 +1231,7 @@ describe('Azure Consumption Management Service', () => {
     expect(result).toEqual(expectedResult)
   })
 
-  it('successfully returns estimation for lookup table input data', () => {
+  it('successfully returns estimation for lookup table input data', async () => {
     const inputData: LookupTableInput[] = [
       {
         serviceName: 'Virtual Machines',
@@ -1217,16 +1253,17 @@ describe('Azure Consumption Management Service', () => {
       ),
     )
 
-    const result =
-      consumptionManagementService.getEstimatesFromInputData(inputData)
+    const result = await consumptionManagementService.getEstimatesFromInputData(
+      inputData,
+    )
 
     const expectedResult: LookupTableOutput[] = [
       {
         serviceName: 'Virtual Machines',
         region: 'uksouth',
         usageType: 'D2 v2/DS2 v2',
-        kilowattHours: 0.015380813559107052,
-        co2e: 0.0000034606830507990865,
+        kilowattHours: 0.011945378995278953,
+        co2e: 0.000004196172273564499,
       },
     ]
 

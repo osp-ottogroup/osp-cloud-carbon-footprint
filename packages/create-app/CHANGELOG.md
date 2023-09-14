@@ -1,5 +1,50 @@
 # @cloud-carbon-footprint/create-app
 
+## 2.5.1
+
+### Patch Changes
+
+- fb11e65c: updates package json deps. template updates [here](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/e7c1f76622155dce304f7a08ad30ab86401adebe).
+- 6ffe7497: adds electricity maps api handling. For CLI create-app template changes, refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/2749723c00343865c7453fea29609ea6dad4b5e9).
+
+## 2.5.0
+
+### Minor Changes
+
+- 6bf5745d: Adds config for disabling forecast date validation
+
+### Patch Changes
+
+- cd3da603: Fix issue with concatentation of data from multiple footprint requests
+  For changes to create-app templates, please refer to [this commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/pull/1194/commits/65f76245d4947cd0bb1b7e4a5b761868dd9c6da0).
+
+## 2.4.0
+
+### Minor Changes
+
+- d217e11e: Adds OpenAPI spec documentation and Swagger portal
+- fedf79c0: API and CLI processes now persist connection to mongodb client when enabled as cache
+
+  For Create-App changes, please refer to this [commit](https://github.com/cloud-carbon-footprint/cloud-carbon-footprint/commit/8995b8a7f29fb06f8a437166d32e75b1ed147870).
+
+### Patch Changes
+
+- 7688b086: Updates env templates with new configuration options
+
+## 2.3.5
+
+### Patch Changes
+
+- 93cf993f: updates mock data
+
+## 2.3.4
+
+### Patch Changes
+
+- bcb77429: fixes mock data and integration tests
+- 5e897485: Removes version locks for azure sdk
+- 65386330: bumps ramda dependency
+
 ## 2.3.3
 
 ### Patch Changes

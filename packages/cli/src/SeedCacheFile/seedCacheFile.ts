@@ -4,7 +4,12 @@
 
 import moment, { Moment } from 'moment'
 import { inputPrompt, listPrompt } from '../common'
-import { App, createValidFootprintRequest } from '@cloud-carbon-footprint/app'
+import {
+  App,
+  createValidFootprintRequest,
+  MongoDbCacheManager,
+} from '@cloud-carbon-footprint/app'
+import { configLoader } from '@cloud-carbon-footprint/common'
 
 /**
  * Logs the progress of the estimate request based on the given date range
@@ -41,12 +46,13 @@ export default async function seedCacheFile(): Promise<void> {
   const endDate = moment.utc(end)
 
   // Grab the default length of the request window based on the provided date range
-  let daysPerRequest = endDate.diff(currentDate, 'days') + 1
+  let timePerRequest =
+    endDate.diff(currentDate, `${groupBy}s` as moment.unitOfTime.Diff) + 1
   if (fetchMethod === 'split') {
-    daysPerRequest =
+    timePerRequest =
       parseInt(
         await inputPrompt(
-          'How many days would you like to fetch per request? [1]',
+          `How many ${groupBy}s would you like to fetch per request? [1]`,
         ),
       ) || 1
   }
@@ -73,10 +79,16 @@ export default async function seedCacheFile(): Promise<void> {
     }...`,
   )
 
-  // Makes getCostAndEstimates requests in chunks based on request method and day frequency
+  if (configLoader().CACHE_MODE === 'MONGODB') {
+    await MongoDbCacheManager.createDbConnection()
+  }
+
+  // Makes getCostAndEstimates requests in chunks based on request method and time frequency
   while (currentDate.isSameOrBefore(endDate)) {
     // Use the current date window as the inclusive start/end date of the request
-    let nextDate = currentDate.clone().add(daysPerRequest - 1, 'day')
+    let nextDate = currentDate
+      .clone()
+      .add(timePerRequest - 1, groupBy as moment.unitOfTime.DurationConstructor)
 
     // Enforce end date as boundary if request window passes it
     if (nextDate.isAfter(endDate)) nextDate = endDate.clone()
@@ -89,7 +101,15 @@ export default async function seedCacheFile(): Promise<void> {
     await app.getCostAndEstimates(request)
 
     // Slide to the beginning of the next date window
-    currentDate.add(daysPerRequest, 'day')
+    currentDate.add(
+      timePerRequest,
+      groupBy as moment.unitOfTime.DurationConstructor,
+    )
+  }
+
+  if (configLoader().CACHE_MODE === 'MONGODB') {
+    await MongoDbCacheManager.mongoClient.close()
+    console.info('MongoDB connection closed')
   }
 
   console.info(

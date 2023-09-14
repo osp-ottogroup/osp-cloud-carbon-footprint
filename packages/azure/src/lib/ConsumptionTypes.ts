@@ -2,7 +2,7 @@
  * © 2021 Thoughtworks, Inc.
  */
 
-import { QUERY_DATE_TYPES } from '@cloud-carbon-footprint/common'
+import { QUERY_DATE_TYPES, TagCollection } from '@cloud-carbon-footprint/common'
 import { LegacyUsageDetail, ModernUsageDetail } from '@azure/arm-consumption'
 
 export type TenantHeaders = {
@@ -23,17 +23,8 @@ export type UsageRowPageErrorResponse = {
   message: string
 }
 
-type AzureTags = {
-  [tagKey: string]: string
-}
-
-export type UsageDetailResult = {
-  id: string
-  name: string
-  type: string
-  tags: AzureTags
-  kind: string
-  properties: LegacyUsageDetail | ModernUsageDetail
+export type UsageDetailResult = (LegacyUsageDetail | ModernUsageDetail) & {
+  tags: TagCollection
 }
 
 export const UNKNOWN_SERVICES: string[] = [
@@ -92,7 +83,9 @@ export enum NETWORKING_USAGE_UNITS {
 }
 
 export enum MEMORY_USAGE_UNITS {
+  GB_SECOND_1 = '1 GB Second',
   GB_SECONDS_50000 = '50000 GB Seconds',
+  GB_HOUR_1 = '1 GB Hour',
   GB_HOURS_1000 = '1000 GB Hours',
 }
 
