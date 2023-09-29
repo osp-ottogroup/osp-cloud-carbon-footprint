@@ -19,6 +19,7 @@ import loadConfig from './ConfigLoader'
 import { useFootprintData } from './utils/hooks'
 import { getEmissionDateRange } from './utils/helpers/handleDates'
 import LoadingMessage from './common/LoadingMessage'
+import SciPage from './osp/SciPage'
 
 interface AppProps {
   config?: ClientConfig
@@ -116,6 +117,7 @@ export function App({ config = loadConfig() }: AppProps): ReactElement {
             path="/error"
             element={<ErrorPage errorMessage={errorMessage} />}
           />
+          <Route path="/sci" element={<SciPage />} />
         </Routes>
       </Container>
     </>

@@ -41,6 +41,12 @@ const HeaderBar = (): ReactElement => {
           <Typography component="h2">CONTACT</Typography>
         </Link>
         <NavLink
+          to="/sci"
+          className={clsx(classes.navLink, { isActive: classes.activeNavLink })}
+        >
+          <Typography component="h2">SCI TOOLS</Typography>
+        </NavLink>
+        <NavLink
           to="/recommendations"
           className={clsx(classes.navLink, { isActive: classes.activeNavLink })}
         >
